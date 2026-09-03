@@ -122,3 +122,31 @@ Click a day → **"Mark as rest"**. That day, instead of punching, the app sends
 ## Notice
 
 Time records are a legal document. What is punched should match the hours you actually worked.
+
+## Run with Docker
+
+Needs Docker and Compose. Calendar, credentials, and punch state live in `docker/data` on the host so they survive rebuilds.
+
+```bash
+cd docker
+# optional: cp .env.example .env  and put Woffu user/password there (or use the web UI)
+docker compose up -d --build
+```
+
+Open `http://PI_OR_VPS_LAN_IP:5000` from your PC on the same network.
+
+The compose file already uses `restart: unless-stopped`, so the container comes back after a crash. For that to survive a **power cut / reboot**, Docker itself must start on boot (Debian / Raspberry Pi):
+
+```bash
+sudo systemctl enable --now docker
+```
+
+After that, `docker compose up -d` once is enough: when the machine powers on again, Docker starts and brings `woffu-scheduler` back up. No extra systemd unit is needed.
+
+```bash
+docker compose logs -f        # live container log
+docker compose down           # stop (will stay down until you up again)
+docker compose up -d --build  # update (keeps data/)
+```
+
+Timezone is `Europe/Madrid` (`TZ` in compose / `.env`). More detail: `docker/README.md`.

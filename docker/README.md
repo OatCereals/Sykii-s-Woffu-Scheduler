@@ -12,7 +12,7 @@ On the Pi (or any machine with Docker and Compose):
 
 ```bash
 cd docker
-cp .env.example .env          # optional: put Woffu user/password here
+# optional: cp .env.example .env  and put Woffu user/password there (or use the web UI)
 docker compose up -d --build
 ```
 
@@ -21,6 +21,14 @@ From your PC, same network:
 ```
 http://PI_IP:5000
 ```
+
+The compose file uses `restart: unless-stopped`, so the container restarts after a crash. For a **power cut / reboot**, enable Docker on boot (Debian / Raspberry Pi):
+
+```bash
+sudo systemctl enable --now docker
+```
+
+Then start once with `docker compose up -d`. When the PC comes back on, Docker starts and brings `woffu-scheduler` up again. No extra systemd unit is needed.
 
 Stop:
 
