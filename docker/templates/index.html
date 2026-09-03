@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sykii's Woffu Scheduler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#091428; --bg2:#0A1A33; --panel:#0E2240; --panel2:#102a4d;
+    --line:#1E3A5F; --gold:#C8AA6E; --gold-d:#785A28; --gold-l:#F0E6D2;
+    --teal:#0AC8B9; --teal-d:#0A6E66; --text:#F0E6D2; --muted:#8AA0BD;
+    --danger:#C03B3B; --ok:#3FB27F;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 600px at 50% -10%, #11335e22, transparent),
+      var(--bg);
+    color:var(--text); font-family:'Barlow',system-ui,sans-serif;
+    min-height:100vh; padding:28px 18px 60px;
+  }
+  .wrap{max-width:920px; margin:0 auto}
+
+  /* angular hextech frame */
+  .frame{position:relative; background:linear-gradient(180deg,var(--panel),var(--bg2));
+    border:1px solid var(--line);
+    clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);}
+  .frame::before{content:""; position:absolute; inset:0; pointer-events:none;
+    border:1px solid #C8AA6E22;
+    clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);}
+
+  header.top{display:flex; align-items:center; justify-content:space-between;
+    gap:16px; margin-bottom:22px; flex-wrap:wrap}
+  .brand{display:flex; align-items:baseline; gap:12px}
+  .brand h1{font-family:'Cinzel',serif; font-weight:700; letter-spacing:.14em;
+    font-size:23px; margin:0; color:var(--gold-l)}
+  .brand h1 b{color:var(--gold)}
+  .brand .sub{font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--muted)}
+
+  .statuschip{font-size:12.5px; color:var(--muted); display:flex; gap:14px; align-items:center}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+  .dot.on{background:var(--ok); box-shadow:0 0 8px var(--ok)}
+  .dot.off{background:var(--danger); box-shadow:0 0 8px var(--danger)}
+
+  .section{padding:18px 20px; margin-bottom:18px}
+  .section h2{font-family:'Cinzel',serif; font-weight:600; letter-spacing:.1em;
+    font-size:13px; text-transform:uppercase; color:var(--gold); margin:0 0 14px}
+
+  /* buttons */
+  button{font-family:'Barlow',sans-serif; cursor:pointer; color:var(--gold-l);
+    background:linear-gradient(180deg,#1b3a63,#102a4d); border:1px solid var(--gold-d);
+    padding:9px 16px; font-size:13px; font-weight:600; letter-spacing:.04em;
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+    transition:.14s}
+  button:hover{border-color:var(--gold); background:linear-gradient(180deg,#234a78,#163763)}
+  button.ghost{background:transparent; border-color:var(--line); color:var(--muted)}
+  button.ghost:hover{color:var(--gold-l); border-color:var(--gold-d)}
+  button.danger{border-color:#7a2b2b; color:#e9a9a9}
+  button.danger:hover{border-color:var(--danger); background:#3a1414}
+  button:disabled{opacity:.4; cursor:not-allowed}
+
+  input[type=time],input[type=text],input[type=password]{
+    background:#081627; border:1px solid var(--line); color:var(--gold-l);
+    padding:8px 10px; font-family:'Barlow',sans-serif; font-size:13px; border-radius:0}
+  input:focus{outline:none; border-color:var(--gold)}
+  label.fld{display:flex; flex-direction:column; gap:5px; font-size:11px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+
+  /* presets */
+  .presets{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+  .preset{display:flex; gap:8px; align-items:flex-end; padding:10px 12px;
+    border:1px solid var(--line); background:#0a1c34; cursor:pointer}
+  .preset.active{border-color:var(--teal); box-shadow:inset 0 0 12px #0ac8b922}
+  .preset input[type=text]{width:88px}
+  .paintbar{display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap}
+  .pill{padding:7px 13px; border:1px solid var(--line); font-size:12.5px; color:var(--muted);
+    cursor:pointer; user-select:none;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+  .pill.active{border-color:var(--teal); color:var(--teal); box-shadow:inset 0 0 12px #0ac8b922}
+
+  /* calendar */
+  .calhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
+  .calhead .month{font-family:'Cinzel',serif; font-size:18px; letter-spacing:.08em; color:var(--gold-l)}
+  .nav button{padding:6px 13px}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:7px}
+  .wd{text-align:center; font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--muted); padding-bottom:4px}
+  .cell{position:relative; min-height:74px; padding:7px 8px; background:#0a1b32;
+    border:1px solid var(--line); cursor:pointer; transition:.12s; overflow:hidden}
+  .cell:hover{border-color:var(--gold-d)}
+  .cell.blank{background:transparent; border:none; cursor:default}
+  .cell .num{font-size:13px; color:var(--muted); font-weight:600}
+  .cell.today .num{color:var(--gold-l)}
+  .cell.today{border-color:var(--gold)}
+  .cell.holiday::after{content:""; position:absolute; top:8px; right:8px; width:6px;height:6px;
+    border-radius:50%; background:var(--gold); box-shadow:0 0 7px var(--gold)}
+  .cell.work{background:linear-gradient(180deg,#0c2742,#0a1f3a); border-color:var(--teal-d);
+    clip-path:polygon(0 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%)}
+  .cell.work::before{content:""; position:absolute; left:0;top:0;bottom:0; width:3px; background:var(--teal)}
+  .cell.work .num{color:var(--gold-l)}
+  .cell.rest{background:linear-gradient(180deg,#2a2410,#1f1c0e); border-color:var(--gold-d)}
+  .cell.rest::before{content:""; position:absolute; left:0;top:0;bottom:0; width:3px; background:var(--gold)}
+  .cell.rest .num{color:var(--gold-l)}
+  .restlbl{margin-top:9px; font-size:12px; color:var(--gold); letter-spacing:.04em; font-weight:600}
+  .shift{margin-top:9px; font-size:12px; line-height:1.5; color:var(--teal)}
+  .shift b{color:var(--gold-l); font-weight:600}
+  .done{position:absolute; bottom:6px; right:8px; font-size:10px; letter-spacing:.08em;
+    color:var(--ok)}
+
+  /* modal */
+  .ov{position:fixed; inset:0; background:#04101fcc; display:none; align-items:center;
+    justify-content:center; z-index:30}
+  .ov.show{display:flex}
+  .modal{width:330px; padding:22px; }
+  .modal h3{font-family:'Cinzel',serif; font-size:16px; color:var(--gold-l); margin:0 0 4px; letter-spacing:.06em}
+  .modal .date{font-size:12px; color:var(--muted); margin-bottom:18px; letter-spacing:.04em}
+  .timegrid{display:flex; gap:14px; margin-bottom:16px}
+  .quickp{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:20px}
+  .quickp .pill{font-size:11px; padding:5px 10px}
+  .modal .actions{display:flex; gap:10px; justify-content:space-between}
+
+  .note{font-size:12px; color:var(--muted); line-height:1.6; margin-top:6px}
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background:#0c2742; border:1px solid var(--gold-d); color:var(--gold-l);
+    padding:11px 20px; font-size:13px; z-index:50; opacity:0; transition:.25s;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+  .toast.show{opacity:1}
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>SYKII'S <b>WOFFU</b> SCHEDULER</h1>
+      <span class="sub">shift control</span>
+    </div>
+    <div class="statuschip" id="statuschip">
+      <span><span class="dot off" id="credDot"></span><span id="credTxt">no credentials</span></span>
+      <span id="todayTxt"></span>
+    </div>
+  </header>
+
+  <!-- credentials -->
+  <section class="frame section" id="credSection">
+    <h2>Woffu access</h2>
+    <div class="row">
+      <label class="fld">User (email)
+        <input type="text" id="cUser" placeholder="you@company.com" style="width:220px">
+      </label>
+      <label class="fld">Password
+        <input type="password" id="cPass" placeholder="••••••••" style="width:180px">
+      </label>
+      <button onclick="saveCreds()">Save and test</button>
+      <button class="ghost" onclick="signNow()">Punch now (test)</button>
+      <button class="ghost" onclick="fixNow()">Fix last night's shift</button>
+    </div>
+    <p class="note">Prefer environment variables <b>WOFFU_USERNAME</b> / <b>WOFFU_PASSWORD</b>.
+      If you save them here, they are written to <b>data/secrets.json</b> on disk (plain text).</p>
+  </section>
+
+  <!-- presets / paint -->
+  <section class="frame section">
+    <h2>Quick shifts</h2>
+    <div class="presets" id="presets"></div>
+    <div class="paintbar">
+      <span class="pill" id="paintToggle" onclick="togglePaint()">Paint mode: OFF</span>
+      <span class="pill" id="paintRest" onclick="selectRestBrush()">Rest</span>
+      <span class="note" id="paintHint">Click a shift (or Rest) to paint. Then click days on the calendar. Click a day again to clear it.</span>
+      <span style="margin-left:auto; display:flex; align-items:center; gap:8px">
+        <label class="fld" style="flex-direction:row; align-items:center; gap:6px">Jitter (min)
+          <input type="text" id="jitter" style="width:48px" onchange="saveJitter()">
+        </label>
+      </span>
+    </div>
+    <p class="note" style="margin-top:8px">Jitter: punch anywhere from 0:00 to N:00 after the shift (e.g. 4 → 07:50:00 … 07:54:00, including 07:52:13). Same day always gets the same time. 0 = exact time.</p>
+  </section>
+
+  <!-- calendar -->
+  <section class="frame section">
+    <div class="calhead">
+      <div class="nav"><button class="ghost" onclick="move(-1)">‹</button></div>
+      <div class="month" id="monthLbl"></div>
+      <div class="nav"><button class="ghost" onclick="move(1)">›</button></div>
+    </div>
+    <div class="grid" id="weekdays"></div>
+    <div class="grid" id="cal" style="margin-top:7px"></div>
+    <p class="note" style="margin-top:16px">Gold dot = holiday (you can still punch it). Teal border = day with a shift.
+      The app must be <b>running</b> for it to punch at each shift time.</p>
+  </section>
+</div>
+
+<!-- day edit modal -->
+<div class="ov" id="overlay">
+  <div class="frame modal">
+    <h3 id="mTitle">Shift</h3>
+    <div class="date" id="mDate"></div>
+    <div class="timegrid">
+      <label class="fld">In<input type="time" id="mIn"></label>
+      <label class="fld">Out<input type="time" id="mOut"></label>
+    </div>
+    <div class="quickp" id="mQuick"></div>
+    <div style="margin-bottom:14px">
+      <button class="ghost" style="border-color:var(--gold-d);color:var(--gold)" onclick="markRest()">☾ Mark as rest</button>
+    </div>
+    <div class="actions">
+      <button class="danger" id="mDel" onclick="delDay()">Remove day</button>
+      <div style="display:flex;gap:10px">
+        <button class="ghost" onclick="closeModal()">Cancel</button>
+        <button onclick="saveDay()">Save shift</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WD=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+let cur=new Date(); cur.setDate(1);
+let monthData={days:{},holidays:{},state:{},today:''};
+let settings={presets:[]};
+let paint=false, activePreset=0, paintRest=false, editing=null;
+
+function iso(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
+
+async function loadSettings(){
+  settings=await (await fetch('/api/settings')).json();
+  document.getElementById('jitter').value = settings.jitter_minutes ?? 4;
+  renderPresets();
+}
+async function saveJitter(){
+  let v=parseInt(document.getElementById('jitter').value,10);
+  if(isNaN(v)||v<0){v=0; document.getElementById('jitter').value=0;}
+  settings.jitter_minutes=v;
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({jitter_minutes:v})});
+  toast('Jitter updated');
+}
+function renderPresets(){
+  const box=document.getElementById('presets'); box.innerHTML='';
+  settings.presets.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='preset'+( !paintRest && activePreset===i ? ' active':'');
+    el.innerHTML=`
+      <label class="fld">Name<input type="text" value="${p.name}" data-i="${i}" data-k="name"></label>
+      <label class="fld">In<input type="time" value="${p.in}" data-i="${i}" data-k="in"></label>
+      <label class="fld">Out<input type="time" value="${p.out}" data-i="${i}" data-k="out"></label>`;
+    el.addEventListener('click',e=>{
+      if(e.target.tagName==='INPUT') return;
+      selectPreset(i);
+    });
+    box.appendChild(el);
+  });
+  box.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',e=>{
+    const i=+e.target.dataset.i,k=e.target.dataset.k;
+    settings.presets[i][k]=e.target.value;
+    fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({presets:settings.presets})});
+    renderPaintToggle();
+  }));
+  renderPaintToggle();
+}
+function brushName(){
+  if(paintRest) return 'Rest';
+  return (settings.presets[activePreset]||{name:'-'}).name;
+}
+function renderPaintToggle(){
+  document.getElementById('paintToggle').textContent=
+    `Paint mode: ${paint?'ON · '+brushName():'OFF'}`;
+  document.getElementById('paintToggle').classList.toggle('active',paint);
+  document.getElementById('paintRest').classList.toggle('active',paint && paintRest);
+  document.querySelectorAll('#presets .preset').forEach((el,i)=>{
+    el.classList.toggle('active', paint && !paintRest && i===activePreset);
+  });
+}
+function selectPreset(i){
+  activePreset=i;
+  paintRest=false;
+  paint=true;
+  renderPaintToggle();
+}
+function selectRestBrush(){
+  paintRest=true;
+  paint=true;
+  renderPaintToggle();
+}
+function togglePaint(){
+  paint=!paint;
+  if(paint) paintRest=false;
+  renderPaintToggle();
+}
+
+async function loadMonth(){
+  const y=cur.getFullYear(),m=cur.getMonth();
+  monthData=await (await fetch(`/api/month/${y}/${m+1}`)).json();
+  document.getElementById('monthLbl').textContent=`${MONTHS[m]} ${y}`;
+  render();
+}
+function render(){
+  const wd=document.getElementById('weekdays'); wd.innerHTML='';
+  WD.forEach(d=>{const e=document.createElement('div');e.className='wd';e.textContent=d;wd.appendChild(e)});
+  const cal=document.getElementById('cal'); cal.innerHTML='';
+  const y=cur.getFullYear(),m=cur.getMonth();
+  const first=(new Date(y,m,1).getDay()+6)%7; // Monday=0
+  const ndays=new Date(y,m+1,0).getDate();
+  for(let i=0;i<first;i++){const b=document.createElement('div');b.className='cell blank';cal.appendChild(b)}
+  for(let d=1;d<=ndays;d++){
+    const key=iso(y,m,d);
+    const work=monthData.days[key];
+    const isRest=work&&work.rest;
+    const hol=monthData.holidays[key];
+    const done=monthData.state[key]||[];
+    const c=document.createElement('div');
+    c.className='cell'+(isRest?' rest':(work?' work':''))+(hol?' holiday':'')+(key===monthData.today?' today':'');
+    c.title=hol||'';
+    let html=`<div class="num">${d}</div>`;
+    if(isRest) html+=`<div class="restlbl">Rest</div>`;
+    else if(work) html+=`<div class="shift"><b>${work.in}</b> → <b>${work.out}</b></div>`;
+    if(isRest){ if(done.includes('descanso')) html+=`<div class="done">✓ sent</div>`; }
+    else if(done.length) html+=`<div class="done">${done.includes('in')?'✓ in ':''}${done.includes('out')?'✓ out':''}${done.includes('fix')?' ✓ corr':''}</div>`;
+    c.innerHTML=html;
+    c.onclick=()=>onDayClick(key,work);
+    cal.appendChild(c);
+  }
+}
+
+async function onDayClick(key,work){
+  if(!paint){ openModal(key,work); return; }
+  if(paintRest){
+    if(work && work.rest){
+      await fetch('/api/day/'+key,{method:'DELETE'});
+      toast('Cleared '+key);
+    }else{
+      await fetch('/api/day',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({date:key,rest:true})});
+      toast('Rest · '+key);
+    }
+    loadMonth(); return;
+  }
+  const p=settings.presets[activePreset];
+  if(!p||!p.in||!p.out){ toast('Set in and out on the selected shift'); return; }
+  const same=work && !work.rest && work.in===p.in && work.out===p.out;
+  if(same){
+    await fetch('/api/day/'+key,{method:'DELETE'});
+    toast('Cleared '+key);
+  }else{
+    const r=await fetch('/api/day',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:key,in:p.in,out:p.out})});
+    if(!r.ok){ toast('Could not paint day'); return; }
+    toast((p.name||'Shift')+' · '+key);
+  }
+  loadMonth();
+}
+
+function openModal(key,work){
+  editing=key;
+  const isRest=work&&work.rest;
+  const [y,m,d]=key.split('-');
+  document.getElementById('mTitle').textContent=isRest?'Rest day':(work?'Edit shift':'New shift');
+  document.getElementById('mDate').textContent=`${d}/${m}/${y}`+(monthData.holidays[key]?' · '+monthData.holidays[key]:'');
+  document.getElementById('mIn').value=(work&&!isRest)?work.in:(settings.presets[0]?.in||'09:00');
+  document.getElementById('mOut').value=(work&&!isRest)?work.out:(settings.presets[0]?.out||'17:00');
+  document.getElementById('mDel').style.display=work?'':'none';
+  const q=document.getElementById('mQuick'); q.innerHTML='';
+  settings.presets.forEach(p=>{const el=document.createElement('span');el.className='pill';
+    el.textContent=p.name; el.onclick=()=>{document.getElementById('mIn').value=p.in;document.getElementById('mOut').value=p.out};
+    q.appendChild(el)});
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('show');editing=null}
+async function saveDay(){
+  const inT=document.getElementById('mIn').value,outT=document.getElementById('mOut').value;
+  if(!inT||!outT){toast('Set in and out times');return}
+  await fetch('/api/day',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({date:editing,in:inT,out:outT})});
+  closeModal(); loadMonth(); toast('Shift saved');
+}
+async function markRest(){
+  await fetch('/api/day',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({date:editing,rest:true})});
+  closeModal(); loadMonth(); toast('Day marked as rest');
+}
+async function delDay(){await fetch('/api/day/'+editing,{method:'DELETE'});closeModal();loadMonth();toast('Day removed')}
+
+function move(n){cur.setMonth(cur.getMonth()+n);loadMonth()}
+
+async function loadStatus(){
+  const s=await (await fetch('/api/status')).json();
+  document.getElementById('credDot').className='dot '+(s.credentials?'on':'off');
+  document.getElementById('credTxt').textContent=s.credentials?'credentials OK':'no credentials';
+  let t=`today ${s.today} · ${s.now}`;
+  if(s.today_shift) t+=` · shift ${s.today_shift.in}–${s.today_shift.out}`;
+  const labels={in:'in',out:'out',fix:'fix',descanso:'rest'};
+  if(s.today_done?.length) t+=` · ${s.today_done.map(a=>'✓'+(labels[a]||a)).join(' ')}`;
+  document.getElementById('todayTxt').textContent=t;
+}
+
+async function saveCreds(){
+  const u=document.getElementById('cUser').value,p=document.getElementById('cPass').value;
+  if(!u||!p){toast('Enter user and password');return}
+  const r=await fetch('/api/credentials',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username:u,password:p})});
+  if(!r.ok){toast('Error saving');return}
+  const t=await (await fetch('/api/test-auth',{method:'POST'})).json();
+  toast(t.ok?'Connected to Woffu ✓':('Failed: '+t.error));
+  loadStatus();
+}
+async function signNow(){
+  const t=await (await fetch('/api/sign-now',{method:'POST'})).json();
+  toast(t.ok?'Punch sent ✓':('Error: '+t.error));
+  loadStatus();
+}
+async function fixNow(){
+  const t=await (await fetch('/api/fix-now',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+  if(!t.ok){toast('Error: '+t.error);return}
+  toast(t.already?('Already corrected: '+(t.msg||'')):('Corrected ✓ out '+t.out+' ('+t.totalMin+' min)'));
+  loadMonth();loadStatus();
+}
+
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal()});
+(async()=>{await loadSettings();await loadMonth();await loadStatus();setInterval(loadStatus,30000)})();
+</script>
+</body>
+</html>

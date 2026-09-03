@@ -1,0 +1,19 @@
+[Unit]
+Description=Sykii's Woffu Scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=woffu
+WorkingDirectory=/home/woffu/woffu-scheduler
+# Credentials (optional): create a .env with WOFFU_USERNAME and WOFFU_PASSWORD.
+# Optional: WOFFU_HOST=127.0.0.1 to listen on localhost only (default is 0.0.0.0).
+# The leading "-" means it is OK if the file is missing (you can set them in the UI).
+EnvironmentFile=-/home/woffu/woffu-scheduler/.env
+ExecStart=/home/woffu/woffu-scheduler/venv/bin/python app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

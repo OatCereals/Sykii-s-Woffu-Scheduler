@@ -1,0 +1,88 @@
+{
+  "country": "ES",
+  "subdivision": "MD",
+  "poll_seconds": 30,
+  "jitter_minutes": 4,
+  "salt": "44314946ae01d518",
+  "presets": [
+    {
+      "name": "Morning S",
+      "in": "06:50",
+      "out": "13:50"
+    },
+    {
+      "name": "Morning",
+      "in": "07:50",
+      "out": "14:50"
+    },
+    {
+      "name": "Morning L",
+      "in": "07:50",
+      "out": "15:50"
+    },
+    {
+      "name": "Afternoon S",
+      "in": "16:50",
+      "out": "22:50"
+    },
+    {
+      "name": "Afternoon",
+      "in": "14:50",
+      "out": "22:50"
+    },
+    {
+      "name": "Afternoon L",
+      "in": "13:50",
+      "out": "22:50"
+    },
+    {
+      "name": "Night",
+      "in": "22:50",
+      "out": "06:50"
+    },
+    {
+      "name": "Night L",
+      "in": "21:50",
+      "out": "06:50"
+    }
+  ],
+  "descanso": {
+    "enabled": true,
+    "skip_on_nonworking": true,
+    "window_start": "10:00",
+    "window_end": "18:00",
+    "agreementEvent": {
+      "agreementEventId": 2886718,
+      "description": null,
+      "documentRequired": false,
+      "fractionDay": null,
+      "isDocumentRequired": false,
+      "isFractionDay": false,
+      "isPresence": false,
+      "isSelfAccepting": false,
+      "isSlotRequired": false,
+      "isVacation": false,
+      "name": "Descanso",
+      "repositoryAgreementEventId": null,
+      "selfAccepting": false,
+      "slotRequired": false,
+      "useDays": true,
+      "userStats": {
+        "allocatedFormatted": null,
+        "availableFormatted": null,
+        "isFixed": false,
+        "isNull": true,
+        "isRepository": false,
+        "nextYearUsedFormatted": null,
+        "usedFormatted": null
+      },
+      "isRepository": false
+    }
+  },
+  "correccion": {
+    "enabled": true,
+    "delay_min": 10,
+    "delay_max": 20,
+    "out_source": "real"
+  }
+}
