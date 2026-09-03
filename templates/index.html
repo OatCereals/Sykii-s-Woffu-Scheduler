@@ -22,7 +22,7 @@
     color:var(--text); font-family:'Barlow',system-ui,sans-serif;
     min-height:100vh; padding:28px 18px 60px;
   }
-  .wrap{max-width:920px; margin:0 auto}
+  .wrap{max-width:1040px; margin:0 auto}
 
   /* angular hextech frame */
   .frame{position:relative; background:linear-gradient(180deg,var(--panel),var(--bg2));
@@ -70,16 +70,42 @@
     letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
 
   /* presets */
-  .presets{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
-  .preset{display:flex; gap:8px; align-items:flex-end; padding:10px 12px;
-    border:1px solid var(--line); background:#0a1c34; cursor:pointer}
-  .preset.active{border-color:var(--teal); box-shadow:inset 0 0 12px #0ac8b922}
-  .preset input[type=text]{width:88px}
+  .preset-board{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px}
+  @media (max-width:780px){.preset-board{grid-template-columns:1fr}}
+  .preset-col{padding:12px; border:1px solid var(--line); background:#0a1c34}
+  .preset-col h3{font-family:'Cinzel',serif; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--gold); margin:0 0 10px}
+  .preset-col .col-presets{display:flex; flex-direction:column; gap:8px}
+  .preset{display:flex; flex-direction:column; gap:6px; padding:10px 12px;
+    border:1px solid var(--line); background:#081627; cursor:pointer; border-left-width:6px}
+  .preset.active{box-shadow:inset 0 0 12px #ffffff14}
+  .preset input[type=text]{width:100%}
+  .preset .times{display:flex; gap:8px}
+  .preset.morning{border-left-color:#D4A017; background:#2a220e}
+  .preset.morning-s{border-left-color:#FFF4A8; background:#4a4618}
+  .preset.morning-l{border-left-color:#FF6A1A; background:#2a1006}
+  .preset.afternoon{border-left-color:#2ECC71; background:#0a2418}
+  .preset.afternoon-s{border-left-color:#B6F5C8; background:#145c34}
+  .preset.afternoon-l{border-left-color:#086B3A; background:#04140c}
+  .preset.night{border-left-color:#3B82F6; background:#0c1e38}
+  .preset.night-s{border-left-color:#7EF0FF; background:#0e3a4c}
+  .preset.night-l{border-left-color:#7C3AED; background:#14082a}
+  .preset.morning.active{border-color:#D4A017; box-shadow:inset 0 0 14px #D4A01744}
+  .preset.morning-s.active{border-color:#FFF4A8; box-shadow:inset 0 0 14px #FFF4A844}
+  .preset.morning-l.active{border-color:#FF6A1A; box-shadow:inset 0 0 14px #FF6A1A44}
+  .preset.afternoon.active{border-color:#2ECC71; box-shadow:inset 0 0 14px #2ECC7144}
+  .preset.afternoon-s.active{border-color:#B6F5C8; box-shadow:inset 0 0 14px #B6F5C844}
+  .preset.afternoon-l.active{border-color:#086B3A; box-shadow:inset 0 0 14px #086B3A66}
+  .preset.night.active{border-color:#3B82F6; box-shadow:inset 0 0 14px #3B82F644}
+  .preset.night-s.active{border-color:#7EF0FF; box-shadow:inset 0 0 14px #7EF0FF44}
+  .preset.night-l.active{border-color:#7C3AED; box-shadow:inset 0 0 14px #7C3AED55}
   .paintbar{display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap}
   .pill{padding:7px 13px; border:1px solid var(--line); font-size:12.5px; color:var(--muted);
     cursor:pointer; user-select:none;
     clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
   .pill.active{border-color:var(--teal); color:var(--teal); box-shadow:inset 0 0 12px #0ac8b922}
+  .pill.rest-pill{border-color:#6B778C; color:#C5CDD8}
+  .pill.rest-pill.active{border-color:#F0E6D2; color:#F0E6D2; box-shadow:inset 0 0 12px #F0E6D222}
 
   /* calendar */
   .calhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
@@ -96,16 +122,52 @@
   .cell.today .num{color:var(--gold-l)}
   .cell.today{border-color:var(--gold)}
   .cell.holiday::after{content:""; position:absolute; top:8px; right:8px; width:6px;height:6px;
-    border-radius:50%; background:var(--gold); box-shadow:0 0 7px var(--gold)}
-  .cell.work{background:linear-gradient(180deg,#0c2742,#0a1f3a); border-color:var(--teal-d);
+    border-radius:50%; background:var(--danger); box-shadow:0 0 7px var(--danger)}
+  .cell.holiday:not(.shift-day):not(.rest){background:linear-gradient(180deg,#2a1418,#1a1014); border-color:#7a2b2b}
+  .cell.holiday:not(.shift-day) .num{color:#e9a9a9}
+  .hollbl{margin-top:6px; font-size:10px; line-height:1.3; color:#e9a9a9; font-weight:600; letter-spacing:.02em}
+  .cell.shift-day{clip-path:polygon(0 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%)}
+  .cell.shift-day::before{content:""; position:absolute; left:0;top:0;bottom:0; width:6px}
+  .cell.shift-day .num{color:var(--gold-l)}
+  .cell.work{background:linear-gradient(180deg,#0c2742,#0a1f3a); border-color:var(--teal-d)}
+  .cell.work::before{background:var(--teal)}
+  .cell.morning{background:linear-gradient(180deg,#4a3c14,#2a220e); border-color:#D4A017}
+  .cell.morning::before{background:#D4A017}
+  .cell.morning .shift{color:#E8C84A}
+  .cell.morning-s{background:linear-gradient(180deg,#7a7228,#5a5418); border-color:#FFF4A8}
+  .cell.morning-s::before{background:#FFF4A8}
+  .cell.morning-s .shift{color:#FFF8C8}
+  .cell.morning-l{background:linear-gradient(180deg,#6a2208,#2a1006); border-color:#FF6A1A}
+  .cell.morning-l::before{background:#FF6A1A}
+  .cell.morning-l .shift{color:#FFB07A}
+  .cell.afternoon{background:linear-gradient(180deg,#0f3a28,#0a2418); border-color:#2ECC71}
+  .cell.afternoon::before{background:#2ECC71}
+  .cell.afternoon .shift{color:#7DCEA0}
+  .cell.afternoon-s{background:linear-gradient(180deg,#1e6a40,#145c34); border-color:#B6F5C8}
+  .cell.afternoon-s::before{background:#B6F5C8}
+  .cell.afternoon-s .shift{color:#D4FFDC}
+  .cell.afternoon-l{background:linear-gradient(180deg,#063018,#021208); border-color:#086B3A}
+  .cell.afternoon-l::before{background:#086B3A}
+  .cell.afternoon-l .shift{color:#3FB27F}
+  .cell.night{background:linear-gradient(180deg,#163a68,#0c1e38); border-color:#3B82F6}
+  .cell.night::before{background:#3B82F6}
+  .cell.night .shift{color:#93C5FD}
+  .cell.night-s{background:linear-gradient(180deg,#1a5a72,#0e3a4c); border-color:#7EF0FF}
+  .cell.night-s::before{background:#7EF0FF}
+  .cell.night-s .shift{color:#C4F8FF}
+  .cell.night-l{background:linear-gradient(180deg,#2a1460,#14082a); border-color:#7C3AED}
+  .cell.night-l::before{background:#7C3AED}
+  .cell.night-l .shift{color:#C4B5FD}
+  .cell.rest{background:linear-gradient(180deg,#2a3140,#1a2030); border-color:#6B778C;
     clip-path:polygon(0 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%)}
-  .cell.work::before{content:""; position:absolute; left:0;top:0;bottom:0; width:3px; background:var(--teal)}
-  .cell.work .num{color:var(--gold-l)}
-  .cell.rest{background:linear-gradient(180deg,#2a2410,#1f1c0e); border-color:var(--gold-d)}
-  .cell.rest::before{content:""; position:absolute; left:0;top:0;bottom:0; width:3px; background:var(--gold)}
-  .cell.rest .num{color:var(--gold-l)}
-  .restlbl{margin-top:9px; font-size:12px; color:var(--gold); letter-spacing:.04em; font-weight:600}
-  .shift{margin-top:9px; font-size:12px; line-height:1.5; color:var(--teal)}
+  .cell.rest::before{content:""; position:absolute; left:0;top:0;bottom:0; width:6px; background:#F0E6D2}
+  .cell.rest .num,.cell.rest .restlbl{color:#F0E6D2}
+  .cell.rest .done{color:var(--ok)}
+  .cell.weekend:not(.shift-day):not(.rest):not(.holiday){background:#081422; border-color:#16263c}
+  .cell.weekend:not(.shift-day):not(.holiday) .num{color:#5e738c}
+  .restlbl{margin-top:9px; font-size:12px; color:#F0E6D2; letter-spacing:.04em; font-weight:600}
+  .shift{margin-top:6px; font-size:11px; line-height:1.4; color:var(--teal)}
+  .shift .shiftname{display:block; font-size:12px; font-weight:700; letter-spacing:.03em; margin-bottom:2px}
   .shift b{color:var(--gold-l); font-weight:600}
   .done{position:absolute; bottom:6px; right:8px; font-size:10px; letter-spacing:.08em;
     color:var(--ok)}
@@ -166,11 +228,11 @@
   <!-- presets / paint -->
   <section class="frame section">
     <h2>Quick shifts</h2>
-    <div class="presets" id="presets"></div>
+    <div class="preset-board" id="presets"></div>
     <div class="paintbar">
       <span class="pill" id="paintToggle" onclick="togglePaint()">Paint mode: OFF</span>
-      <span class="pill" id="paintRest" onclick="selectRestBrush()">Rest</span>
-      <span class="note" id="paintHint">Click a shift (or Rest) to paint. Then click days on the calendar. Click a day again to clear it.</span>
+      <span class="pill rest-pill" id="paintRest" onclick="selectRestBrush()">Rest</span>
+      <span class="note" id="paintHint">Click a shift (or Rest) to paint. Then click days on the calendar. Click a day again to clear it. Weekends and official festivos cannot be rest — Woffu already treats them as rest unless you add a shift.</span>
       <span style="margin-left:auto; display:flex; align-items:center; gap:8px">
         <label class="fld" style="flex-direction:row; align-items:center; gap:6px">Jitter (min)
           <input type="text" id="jitter" style="width:48px" onchange="saveJitter()">
@@ -187,9 +249,14 @@
       <div class="month" id="monthLbl"></div>
       <div class="nav"><button class="ghost" onclick="move(1)">›</button></div>
     </div>
+    <div class="row" style="margin-bottom:12px; justify-content:space-between">
+      <button class="ghost" style="border-color:#6B778C;color:#F0E6D2" onclick="autoRestMonth()">☾ Auto rest this month</button>
+      <span class="note" style="margin:0">Fills empty weekdays. Skips shifts, weekends, and official ES/Madrid festivos.</span>
+      <button class="danger" style="margin-left:auto" onclick="clearMonth()">Clear calendar</button>
+    </div>
     <div class="grid" id="weekdays"></div>
     <div class="grid" id="cal" style="margin-top:7px"></div>
-    <p class="note" style="margin-top:16px">Gold dot = holiday (you can still punch it). Teal border = day with a shift.
+    <p class="note" style="margin-top:16px">Red number + name = official festivo (Spain / Madrid). You can still add a shift that day. Morning: pale yellow / gold / orange. Afternoon: mint / green / forest. Night: cyan / blue / purple. Slate + cream = rest. Weekends and festivos stay empty unless you add a shift — Woffu already treats them as rest.
       The app must be <b>running</b> for it to punch at each shift time.</p>
   </section>
 </div>
@@ -205,7 +272,7 @@
     </div>
     <div class="quickp" id="mQuick"></div>
     <div style="margin-bottom:14px">
-      <button class="ghost" style="border-color:var(--gold-d);color:var(--gold)" onclick="markRest()">☾ Mark as rest</button>
+      <button class="ghost" id="mRestBtn" style="border-color:#6B778C;color:#F0E6D2" onclick="markRest()">☾ Mark as rest</button>
     </div>
     <div class="actions">
       <button class="danger" id="mDel" onclick="delDay()">Remove day</button>
@@ -226,10 +293,51 @@ let cur=new Date(); cur.setDate(1);
 let monthData={days:{},holidays:{},state:{},today:''};
 let settings={presets:[]};
 let paint=false, activePreset=0, paintRest=false, editing=null;
+const LANES=[
+  {id:'normal', title:'Shifts'},
+  {id:'long', title:'Long shifts'},
+  {id:'short', title:'Short'},
+];
 
 function iso(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function isWeekend(key){
+  const [y,mo,d]=key.split('-').map(Number);
+  const wd=new Date(y,mo-1,d).getDay();
+  return wd===0||wd===6;
+}
+function isHoliday(key){return !!(monthData.holidays&&monthData.holidays[key])}
+function woffuAlreadyRest(key){return isWeekend(key)||isHoliday(key)}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
+function laneOf(p){
+  const n=(p.name||'').trim();
+  if(/\sS$/i.test(n)) return 'short';
+  if(/\sL$/i.test(n)) return 'long';
+  return 'normal';
+}
+function toneOf(p){
+  const raw=(p&&p.name)||'';
+  const n=raw.toLowerCase();
+  let fam='work';
+  if(n.includes('morning')) fam='morning';
+  else if(n.includes('afternoon')) fam='afternoon';
+  else if(n.includes('night')) fam='night';
+  if(fam==='work') return 'work';
+  if(/\sS$/i.test(raw)) return fam+'-s';
+  if(/\sL$/i.test(raw)) return fam+'-l';
+  return fam;
+}
+function periodRank(p){
+  const n=(p.name||'').toLowerCase();
+  if(n.includes('morning')) return 0;
+  if(n.includes('afternoon')) return 1;
+  if(n.includes('night')) return 2;
+  return 9;
+}
+function presetForWork(work){
+  if(!work||work.rest) return null;
+  return (settings.presets||[]).find(p=>p.in===work.in && p.out===work.out)||null;
+}
 
 async function loadSettings(){
   settings=await (await fetch('/api/settings')).json();
@@ -246,25 +354,41 @@ async function saveJitter(){
 }
 function renderPresets(){
   const box=document.getElementById('presets'); box.innerHTML='';
-  settings.presets.forEach((p,i)=>{
-    const el=document.createElement('div');
-    el.className='preset'+( !paintRest && activePreset===i ? ' active':'');
-    el.innerHTML=`
-      <label class="fld">Name<input type="text" value="${p.name}" data-i="${i}" data-k="name"></label>
-      <label class="fld">In<input type="time" value="${p.in}" data-i="${i}" data-k="in"></label>
-      <label class="fld">Out<input type="time" value="${p.out}" data-i="${i}" data-k="out"></label>`;
-    el.addEventListener('click',e=>{
-      if(e.target.tagName==='INPUT') return;
-      selectPreset(i);
-    });
-    box.appendChild(el);
+  LANES.forEach(lane=>{
+    const col=document.createElement('div');
+    col.className='preset-col';
+    const h=document.createElement('h3'); h.textContent=lane.title; col.appendChild(h);
+    const stack=document.createElement('div'); stack.className='col-presets';
+    settings.presets
+      .map((p,i)=>({p,i}))
+      .filter(x=>laneOf(x.p)===lane.id)
+      .sort((a,b)=>periodRank(a.p)-periodRank(b.p))
+      .forEach(({p,i})=>{
+        const el=document.createElement('div');
+        el.className='preset '+toneOf(p);
+        el.dataset.i=String(i);
+        el.innerHTML=`
+          <label class="fld">Name<input type="text" value="${p.name}" data-i="${i}" data-k="name"></label>
+          <div class="times">
+            <label class="fld">In<input type="time" value="${p.in}" data-i="${i}" data-k="in"></label>
+            <label class="fld">Out<input type="time" value="${p.out}" data-i="${i}" data-k="out"></label>
+          </div>`;
+        el.addEventListener('click',e=>{
+          if(e.target.tagName==='INPUT') return;
+          selectPreset(i);
+        });
+        stack.appendChild(el);
+      });
+    col.appendChild(stack);
+    box.appendChild(col);
   });
   box.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',e=>{
     const i=+e.target.dataset.i,k=e.target.dataset.k;
     settings.presets[i][k]=e.target.value;
     fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({presets:settings.presets})});
-    renderPaintToggle();
+    renderPresets();
+    render();
   }));
   renderPaintToggle();
 }
@@ -277,8 +401,8 @@ function renderPaintToggle(){
     `Paint mode: ${paint?'ON · '+brushName():'OFF'}`;
   document.getElementById('paintToggle').classList.toggle('active',paint);
   document.getElementById('paintRest').classList.toggle('active',paint && paintRest);
-  document.querySelectorAll('#presets .preset').forEach((el,i)=>{
-    el.classList.toggle('active', paint && !paintRest && i===activePreset);
+  document.querySelectorAll('#presets .preset').forEach(el=>{
+    el.classList.toggle('active', paint && !paintRest && +el.dataset.i===activePreset);
   });
 }
 function selectPreset(i){
@@ -316,14 +440,21 @@ function render(){
     const key=iso(y,m,d);
     const work=monthData.days[key];
     const isRest=work&&work.rest;
+    const weekend=isWeekend(key);
     const hol=monthData.holidays[key];
     const done=monthData.state[key]||[];
     const c=document.createElement('div');
-    c.className='cell'+(isRest?' rest':(work?' work':''))+(hol?' holiday':'')+(key===monthData.today?' today':'');
+    const p=presetForWork(work);
+    const tone=isRest?'rest':(work?toneOf(p||work):'');
+    c.className='cell'+(isRest?' rest':(work?' shift-day '+tone:''))+(weekend?' weekend':'')+(hol?' holiday':'')+(key===monthData.today?' today':'');
     c.title=hol||'';
     let html=`<div class="num">${d}</div>`;
     if(isRest) html+=`<div class="restlbl">Rest</div>`;
-    else if(work) html+=`<div class="shift"><b>${work.in}</b> → <b>${work.out}</b></div>`;
+    else if(work){
+      const name=p?p.name:'';
+      html+=`<div class="shift">${name?`<span class="shiftname">${name}</span>`:''}<b>${work.in}</b> → <b>${work.out}</b></div>`;
+      if(hol) html+=`<div class="hollbl">${hol}</div>`;
+    }else if(hol) html+=`<div class="hollbl">${hol}</div>`;
     if(isRest){ if(done.includes('descanso')) html+=`<div class="done">✓ sent</div>`; }
     else if(done.length) html+=`<div class="done">${done.includes('in')?'✓ in ':''}${done.includes('out')?'✓ out':''}${done.includes('fix')?' ✓ corr':''}</div>`;
     c.innerHTML=html;
@@ -335,6 +466,10 @@ function render(){
 async function onDayClick(key,work){
   if(!paint){ openModal(key,work); return; }
   if(paintRest){
+    if(woffuAlreadyRest(key) && !(work && work.rest)){
+      toast('Weekends and official holidays are already rest in Woffu unless you add a shift');
+      return;
+    }
     if(work && work.rest){
       await fetch('/api/day/'+key,{method:'DELETE'});
       toast('Cleared '+key);
@@ -369,8 +504,9 @@ function openModal(key,work){
   document.getElementById('mIn').value=(work&&!isRest)?work.in:(settings.presets[0]?.in||'09:00');
   document.getElementById('mOut').value=(work&&!isRest)?work.out:(settings.presets[0]?.out||'17:00');
   document.getElementById('mDel').style.display=work?'':'none';
+  document.getElementById('mRestBtn').style.display=woffuAlreadyRest(key)?'none':'';
   const q=document.getElementById('mQuick'); q.innerHTML='';
-  settings.presets.forEach(p=>{const el=document.createElement('span');el.className='pill';
+  settings.presets.forEach(p=>{const el=document.createElement('span');el.className='pill '+toneOf(p);
     el.textContent=p.name; el.onclick=()=>{document.getElementById('mIn').value=p.in;document.getElementById('mOut').value=p.out};
     q.appendChild(el)});
   document.getElementById('overlay').classList.add('show');
@@ -384,9 +520,38 @@ async function saveDay(){
   closeModal(); loadMonth(); toast('Shift saved');
 }
 async function markRest(){
-  await fetch('/api/day',{method:'POST',headers:{'Content-Type':'application/json'},
+  if(woffuAlreadyRest(editing)){
+    toast('Weekends and official holidays are already rest in Woffu unless you add a shift');
+    return;
+  }
+  const r=await fetch('/api/day',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({date:editing,rest:true})});
+  if(!r.ok){
+    const t=await r.json().catch(()=>({}));
+    toast(t.error||'Could not mark rest');
+    return;
+  }
   closeModal(); loadMonth(); toast('Day marked as rest');
+}
+async function autoRestMonth(){
+  const y=cur.getFullYear(), m=cur.getMonth()+1;
+  const r=await fetch(`/api/month/${y}/${m}/auto-rest`,{method:'POST'});
+  const t=await r.json().catch(()=>({}));
+  if(!r.ok){ toast(t.error||'Could not auto-set rest'); return; }
+  const n=t.marked||0;
+  if(!n) toast('Nothing to fill — weekdays already have a shift or rest');
+  else toast(`Rest set on ${n} weekday${n===1?'':'s'} (skipped shifts, weekends & festivos)`);
+  loadMonth();
+}
+async function clearMonth(){
+  const y=cur.getFullYear(), m=cur.getMonth()+1;
+  if(!confirm(`Clear all shifts and rest for ${MONTHS[m-1]} ${y}? Punch history is kept.`)) return;
+  const r=await fetch(`/api/month/${y}/${m}/clear`,{method:'POST'});
+  const t=await r.json().catch(()=>({}));
+  if(!r.ok){ toast(t.error||'Could not clear calendar'); return; }
+  const n=t.cleared||0;
+  toast(n?`Cleared ${n} day${n===1?'':'s'}`:'Calendar already empty');
+  loadMonth();
 }
 async function delDay(){await fetch('/api/day/'+editing,{method:'DELETE'});closeModal();loadMonth();toast('Day removed')}
 

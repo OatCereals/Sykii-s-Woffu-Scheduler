@@ -115,7 +115,10 @@ def get_settings():
     s.update(load_json(SETTINGS_FILE, {}))
     if not s.get("salt"):
         s["salt"] = hashlib.sha256(os.urandom(16)).hexdigest()[:16]
-        save_json(SETTINGS_FILE, s)
+        try:
+            save_json(SETTINGS_FILE, s)
+        except OSError as e:
+            log(f"could not write settings: {e}")
     return s
 
 
@@ -505,12 +508,14 @@ def holidays_for_month(year, month):
     return {d.isoformat(): n for d, n in h.items() if d.month == month}
 
 
-def is_nonworking_day(iso):
-    """True if `iso` is Saturday, Sunday, or a holiday (per country/subdivision).
-    On those days the company already marks rest, so we do not send a request."""
+def is_weekend(iso):
+    """Saturday or Sunday. Woffu already treats these as rest unless a shift is set."""
+    return date.fromisoformat(iso).weekday() >= 5  # 5=Saturday, 6=Sunday
+
+
+def is_holiday(iso):
+    """Official public holiday for settings country/subdivision (default ES/Madrid)."""
     d = date.fromisoformat(iso)
-    if d.weekday() >= 5:            # 5=Saturday, 6=Sunday
-        return True
     if holidays_lib is None:
         return False
     s = get_settings()
@@ -520,6 +525,17 @@ def is_nonworking_day(iso):
         return d in h
     except Exception:
         return False
+
+
+def woffu_already_rest(iso):
+    """Weekends and official festivos: Woffu already counts them as rest unless a shift is set."""
+    return is_weekend(iso) or is_holiday(iso)
+
+
+def is_nonworking_day(iso):
+    """True if `iso` is Saturday, Sunday, or a holiday (per country/subdivision).
+    On those days the company already marks rest, so we do not send a request."""
+    return woffu_already_rest(iso)
 
 
 # ----------------------------- scheduler -----------------------------
@@ -736,6 +752,10 @@ def api_set_day():
         return jsonify({"error": "Missing date."}), 400
     schedule = load_json(SCHEDULE_FILE, {})
     if body.get("rest"):
+        if woffu_already_rest(d):
+            return jsonify({
+                "error": "Weekends and official holidays are already rest in Woffu unless you add a shift.",
+            }), 400
         schedule[d] = {"rest": True}
     else:
         in_t, out_t = body.get("in"), body.get("out")
@@ -744,6 +764,63 @@ def api_set_day():
         schedule[d] = {"in": in_t, "out": out_t}
     save_json(SCHEDULE_FILE, schedule)
     return jsonify({"ok": True, "day": schedule[d]})
+
+
+@app.route("/api/month/<int:year>/<int:month>/auto-rest", methods=["POST"])
+def api_auto_rest_month(year, month):
+    """Mark empty weekdays as rest. Skip weekends, official holidays, and days that already have a shift."""
+    if not (1 <= month <= 12) or year < 2000 or year > 2100:
+        return jsonify({"error": "Invalid month."}), 400
+    schedule = load_json(SCHEDULE_FILE, {})
+    start = date(year, month, 1)
+    end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+    marked = 0
+    skipped_weekend = 0
+    skipped_holiday = 0
+    skipped_shift = 0
+    already = 0
+    d = start
+    while d < end:
+        key = d.isoformat()
+        existing = schedule.get(key)
+        if is_weekend(key) or is_holiday(key):
+            if is_weekend(key):
+                skipped_weekend += 1
+            else:
+                skipped_holiday += 1
+            if existing and existing.get("rest"):
+                schedule.pop(key, None)
+        elif existing and not existing.get("rest"):
+            skipped_shift += 1
+        elif existing and existing.get("rest"):
+            already += 1
+        else:
+            schedule[key] = {"rest": True}
+            marked += 1
+        d += timedelta(days=1)
+    save_json(SCHEDULE_FILE, schedule)
+    return jsonify({
+        "ok": True,
+        "marked": marked,
+        "already": already,
+        "skipped_weekend": skipped_weekend,
+        "skipped_holiday": skipped_holiday,
+        "skipped_shift": skipped_shift,
+    })
+
+
+@app.route("/api/month/<int:year>/<int:month>/clear", methods=["POST"])
+def api_clear_month(year, month):
+    """Remove all shifts and rest marks for the month. Punch history is left as-is."""
+    if not (1 <= month <= 12) or year < 2000 or year > 2100:
+        return jsonify({"error": "Invalid month."}), 400
+    prefix = f"{year:04d}-{month:02d}-"
+    schedule = load_json(SCHEDULE_FILE, {})
+    removed = [k for k in list(schedule) if k.startswith(prefix)]
+    for k in removed:
+        schedule.pop(k, None)
+    save_json(SCHEDULE_FILE, schedule)
+    return jsonify({"ok": True, "cleared": len(removed)})
 
 
 @app.route("/api/day/<d>", methods=["DELETE"])
