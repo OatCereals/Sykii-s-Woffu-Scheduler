@@ -98,10 +98,10 @@ tail -f /home/woffu/woffu-scheduler/data/woffu.log   # punch events only
 
 ## How it works
 
-- **Jitter**: each punch goes out 0:00 to N:00 after the shift time (default 4 → up to 4 minutes, e.g. 07:52:13, never 07:54:13). Deterministic per day, unique per install.
+- **Jitter**: each punch goes out 0:00 to N:00 before the shift time (default 4 → up to 4 minutes early, e.g. 07:47:13, never before 07:46:00). Deterministic per day, unique per install.
 - **Midnight shifts** (22:50→06:50): clocks in that night and clocks out at 06:50 the next morning. Because the VPS stays on, this does not fail.
 - **Days**: only days you mark on the calendar are punched. Holidays included if you mark them.
-- **Night-shift correction**: Woffu can auto-close a night shift at a 7h15 cap even if you clocked out later. After clock-out, the app waits 10–20 minutes (configurable) and PUTs the real end time.
+- **Out-time correction**: ~30s after we send clock-out, we read the workday. If Woffu capped it at 7h15 (e.g. 22:05 instead of 22:50), we PUT the calendar end time. If it is already correct, we do nothing. If Woffu already auto-closed, we skip a second punch (that would clock you back in).
 
 ## Rest days (automatic absence request)
 

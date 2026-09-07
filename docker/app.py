@@ -83,8 +83,9 @@ DEFAULT_SETTINGS = {
         "enabled": True,
         "delay_min": 10,         # correction is sent between delay_min and delay_max minutes
         "delay_max": 20,         # after clock-out (deterministic random per day)
-        "out_source": "real",    # "real" = time actually punched (Woffu may have capped it at 7h15)
+        "out_source": "auto",    # "auto" = later of calendar out vs punched out (fixes 7h15 cap)
                                  # "schedule" = that day's "out" from your calendar
+                                 # "real" = time actually punched
     },
 }
 
@@ -287,10 +288,11 @@ def send_rest(iso):
     return True
 
 
-# ----------------------------- night-shift correction -----------------------------
-# Woffu, if misconfigured, auto-closes a night shift at a 7h15 cap
-# (valueTime = in + 7:15) even if clock-out was later. The correction
-# reads the workday, sets the real out time, and rewrites totalMin.
+# ----------------------------- out-time correction -----------------------------
+# Woffu, if misconfigured, auto-closes a shift at a 7h15 cap
+# (valueTime = in + 7:15) even if clock-out was later (e.g. 14:50→22:50
+# becomes 22:05). The correction reads the workday, sets the calendar /
+# real out time, and rewrites totalMin.
 
 _WEB_HEADERS = {
     "Accept": "application/json, text/plain, */*",
@@ -391,15 +393,39 @@ def _real_out_hhmmss(out):
     return out.get("shortTime") or out.get("time")
 
 
+def _norm_hhmmss(t):
+    if not t:
+        return None
+    return t if str(t).count(":") >= 2 else str(t) + ":00"
+
+
 def _target_out_hhmmss(iso, slot):
-    """Out time to set. 'real' = what was actually punched (what Woffu
-    trimmed); 'schedule' = that day's 'out' from your calendar."""
-    cfg = get_settings().get("correccion", {})
-    if cfg.get("out_source", "real") == "schedule":
-        ot = (load_json(SCHEDULE_FILE, {}).get(iso, {}) or {}).get("out")
-        if ot:
-            return ot if ot.count(":") == 2 else ot + ":00"
-    return _real_out_hhmmss(slot.get("out") or {})
+    """Out time to set. Prefer the later of calendar out vs punched out so a
+    7h15 auto-close (e.g. 22:05) does not beat a 22:50 shift."""
+    real = _norm_hhmmss(_real_out_hhmmss(slot.get("out") or {}))
+    ot = (load_json(SCHEDULE_FILE, {}).get(iso, {}) or {}).get("out")
+    sched = _norm_hhmmss(ot)
+    mode = get_settings().get("correccion", {}).get("out_source", "auto")
+    if mode == "schedule" and sched:
+        return sched
+    if mode == "real" and real:
+        if sched and _hhmmss_to_sec(sched) > _hhmmss_to_sec(real) + 60:
+            return sched
+        return real
+    if sched and real:
+        return sched if _hhmmss_to_sec(sched) > _hhmmss_to_sec(real) else real
+    return sched or real
+
+
+def shift_already_has_out(iso):
+    """True if Woffu already closed the day's slot (auto-close at 7h15)."""
+    try:
+        wd = fetch_workday(iso)
+    except (WoffuError, requests.RequestException) as e:
+        log(f"{iso} could not read workday before out: {e}")
+        return False
+    sl = _night_slot(wd)
+    return bool(sl and sl.get("out"))
 
 
 def send_correction(iso, workday=None):
@@ -546,8 +572,8 @@ def hhmm_to_min(t):
 
 
 def jitter_delta(iso, action):
-    """Delay after the shift time: 0 seconds through jitter_minutes exactly
-    (e.g. 4 -> 0:00 .. 4:00, so 2:13 is allowed, 4:13 is not).
+    """How early to punch: 0 seconds through jitter_minutes exactly
+    (e.g. 4 -> 0:00 .. 4:00 before, so 2:13 early is allowed, 4:13 is not).
     Deterministic per day and action so a restart does not pick a new time."""
     s = get_settings()
     jmax = int(s.get("jitter_minutes", 0))
@@ -560,7 +586,7 @@ def jitter_delta(iso, action):
 
 def due_at(day, hhmm, iso, action):
     hh, mm = hhmm.split(":")[:2]
-    return datetime(day.year, day.month, day.day, int(hh), int(mm), 0) + jitter_delta(iso, action)
+    return datetime(day.year, day.month, day.day, int(hh), int(mm), 0) - jitter_delta(iso, action)
 
 
 def correction_delay(iso):
@@ -690,7 +716,18 @@ def tick():
         if out_t and same_day and is_done(iso, "in") and not is_done(iso, "out"):
             tgt = due_at(today, out_t, iso, "out")
             if note(tgt):
-                _fire(iso, "out")
+                if shift_already_has_out(iso):
+                    mark_done(iso, "out")
+                    log(f"{iso} out skipped (Woffu already auto-closed; will correct)")
+                else:
+                    _fire(iso, "out")
+
+        ccfg = get_settings().get("correccion", {})
+        if (same_day and out_t and ccfg.get("enabled", True)
+                and is_done(iso, "in") and is_done(iso, "out") and not is_done(iso, "fix")):
+            tgt = due_at(today, out_t, iso, "out") + timedelta(seconds=30)
+            if note(tgt):
+                _fire_correction(iso)
 
     sy = sched.get(yiso)
     if sy:
@@ -702,13 +739,18 @@ def tick():
         if crosses and is_done(yiso, "in") and not is_done(yiso, "out"):
             tgt = due_at(today, yout, yiso, "out")
             if note(tgt) and now_min < yin_min:
-                _fire(yiso, "out")
+                if shift_already_has_out(yiso):
+                    mark_done(yiso, "out")
+                    log(f"{yiso} out skipped (Woffu already auto-closed; will correct)")
+                else:
+                    _fire(yiso, "out")
 
         ccfg = get_settings().get("correccion", {})
         if (crosses and ccfg.get("enabled", True)
-                and is_done(yiso, "out") and not is_done(yiso, "fix")):
-            tgt = due_at(today, yout, yiso, "out") + timedelta(minutes=correction_delay(yiso))
-            if note(tgt) and now_min < yin_min:
+                and is_done(yiso, "out") and not is_done(yiso, "fix")
+                and now_min < yin_min):
+            tgt = due_at(today, yout, yiso, "out") + timedelta(seconds=30)
+            if note(tgt):
                 _fire_correction(yiso)
 
     return max(0.2, next_wait)
