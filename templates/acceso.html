@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Access</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #f4f4f4; font-family: Arial, Helvetica, sans-serif; color: #222; }
+  .box { background: #fff; border: 1px solid #ccc; padding: 28px 32px; width: 340px; max-width: 92vw; }
+  h1 { font-size: 18px; margin: 0 0 6px; font-weight: 700; }
+  .hint { font-size: 12px; color: #666; margin-bottom: 18px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tabs button { flex: 1; padding: 8px; border: 1px solid #bbb; background: #eee; cursor: pointer; font-size: 13px; }
+  .tabs button.on { background: #fff; border-bottom-color: #fff; font-weight: 700; }
+  label { display: block; font-size: 12px; margin: 10px 0 4px; color: #444; }
+  input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #bbb; font-size: 14px; }
+  .go { margin-top: 16px; width: 100%; padding: 10px; border: 1px solid #888; background: #e8e8e8;
+    font-size: 14px; cursor: pointer; }
+  .go:hover { background: #ddd; }
+  .err { color: #a00; font-size: 12px; margin-top: 12px; min-height: 16px; }
+  .back { display: block; margin-top: 16px; font-size: 12px; color: #666; text-align: center; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>Internal access</h1>
+  <p class="hint">Login or register with the invite code.</p>
+  <div class="tabs">
+    <button type="button" class="on" id="tabLogin" onclick="show('login')">Login</button>
+    <button type="button" id="tabReg" onclick="show('reg')">Register</button>
+  </div>
+
+  <div class="panel on" id="panelLogin">
+    <label>Username</label>
+    <input id="lUser" autocomplete="username">
+    <label>Password</label>
+    <input id="lPass" type="password" autocomplete="current-password">
+    <button class="go" onclick="doLogin()">Login</button>
+  </div>
+
+  <div class="panel" id="panelReg">
+    <label>Username</label>
+    <input id="rUser" autocomplete="username">
+    <label>Password</label>
+    <input id="rPass" type="password" autocomplete="new-password">
+    <label>Invite code</label>
+    <input id="rCode" type="password" autocomplete="off" placeholder="••••••••">
+    <button class="go" onclick="doReg()">Create account</button>
+  </div>
+
+  <div class="err" id="err"></div>
+  <a class="back" href="/">← back</a>
+</div>
+<script>
+function show(which){
+  document.getElementById('panelLogin').classList.toggle('on', which==='login');
+  document.getElementById('panelReg').classList.toggle('on', which==='reg');
+  document.getElementById('tabLogin').classList.toggle('on', which==='login');
+  document.getElementById('tabReg').classList.toggle('on', which==='reg');
+  document.getElementById('err').textContent='';
+}
+function err(m){ document.getElementById('err').textContent=m||''; }
+async function doLogin(){
+  err('');
+  const username=document.getElementById('lUser').value.trim();
+  const password=document.getElementById('lPass').value;
+  const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username,password})});
+  const t=await r.json().catch(()=>({}));
+  if(!r.ok){ err(t.error||'Login failed'); return; }
+  location.href='/app';
+}
+async function doReg(){
+  err('');
+  const username=document.getElementById('rUser').value.trim();
+  const password=document.getElementById('rPass').value;
+  const code=document.getElementById('rCode').value;
+  const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username,password,code})});
+  const t=await r.json().catch(()=>({}));
+  if(!r.ok){ err(t.error||'Register failed'); return; }
+  location.href='/app';
+}
+document.getElementById('lPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('rCode').addEventListener('keydown',e=>{ if(e.key==='Enter') doReg(); });
+</script>
+</body>
+</html>

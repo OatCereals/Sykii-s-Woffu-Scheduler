@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sykii's Woffu Scheduler</title>
+<title>kinkyscheduler</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,10 +44,24 @@
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
   .dot.on{background:var(--ok); box-shadow:0 0 8px var(--ok)}
   .dot.off{background:var(--danger); box-shadow:0 0 8px var(--danger)}
+  .dot.warn{background:#E8A838; box-shadow:0 0 8px #E8A838}
+  .cred-ok-txt{color:var(--ok)}
+  .cred-bad-txt{color:#E8A838}
+  .cred-form.hidden{display:none}
+  .cred-edit-wrap{display:none}
+  .cred-edit-wrap.show{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 
   .section{padding:18px 20px; margin-bottom:18px}
   .section h2{font-family:'Cinzel',serif; font-weight:600; letter-spacing:.1em;
     font-size:13px; text-transform:uppercase; color:var(--gold); margin:0 0 14px}
+  .section-toggle{display:flex; align-items:center; justify-content:space-between; gap:12px;
+    cursor:pointer; user-select:none; margin:0 0 0}
+  .section-toggle h2{margin:0}
+  .section-toggle .chev{font-size:12px; color:var(--muted); letter-spacing:0; transition:.15s}
+  #credSection.collapsed .section-toggle{margin-bottom:0}
+  #credSection.collapsed .section-toggle .chev{transform:rotate(-90deg)}
+  #credSection.collapsed .cred-body{display:none}
+  #credSection:not(.collapsed) .cred-body{margin-top:14px}
 
   /* buttons */
   button{font-family:'Barlow',sans-serif; cursor:pointer; color:var(--gold-l);
@@ -84,6 +98,7 @@
   .preset.morning{border-left-color:#D4A017; background:#2a220e}
   .preset.morning-s{border-left-color:#FFF4A8; background:#4a4618}
   .preset.morning-l{border-left-color:#FF6A1A; background:#2a1006}
+  .preset.office{border-left-color:#0AC8B9; background:#0a2a2e}
   .preset.afternoon{border-left-color:#2ECC71; background:#0a2418}
   .preset.afternoon-s{border-left-color:#B6F5C8; background:#145c34}
   .preset.afternoon-l{border-left-color:#086B3A; background:#04140c}
@@ -92,6 +107,7 @@
   .preset.night-l{border-left-color:#7C3AED; background:#14082a}
   .preset.morning.active{border-color:#D4A017; box-shadow:inset 0 0 14px #D4A01744}
   .preset.morning-s.active{border-color:#FFF4A8; box-shadow:inset 0 0 14px #FFF4A844}
+  .preset.office.active{border-color:#0AC8B9; box-shadow:inset 0 0 14px #0AC8B944}
   .preset.morning-l.active{border-color:#FF6A1A; box-shadow:inset 0 0 14px #FF6A1A44}
   .preset.afternoon.active{border-color:#2ECC71; box-shadow:inset 0 0 14px #2ECC7144}
   .preset.afternoon-s.active{border-color:#B6F5C8; box-shadow:inset 0 0 14px #B6F5C844}
@@ -137,6 +153,9 @@
   .cell.morning-s{background:linear-gradient(180deg,#7a7228,#5a5418); border-color:#FFF4A8}
   .cell.morning-s::before{background:#FFF4A8}
   .cell.morning-s .shift{color:#FFF8C8}
+  .cell.office{background:linear-gradient(180deg,#0c3a40,#0a2428); border-color:#0AC8B9}
+  .cell.office::before{background:#0AC8B9}
+  .cell.office .shift{color:#7EF0E8}
   .cell.morning-l{background:linear-gradient(180deg,#6a2208,#2a1006); border-color:#FF6A1A}
   .cell.morning-l::before{background:#FF6A1A}
   .cell.morning-l .shift{color:#FFB07A}
@@ -198,31 +217,44 @@
 
   <header class="top">
     <div class="brand">
-      <h1>SYKII'S <b>WOFFU</b> SCHEDULER</h1>
-      <span class="sub">shift control</span>
+      <h1>KINKY<b>SCHEDULER</b></h1>
+      <span class="sub">shift control · <span id="who">{{ app_user }}</span></span>
     </div>
     <div class="statuschip" id="statuschip">
       <span><span class="dot off" id="credDot"></span><span id="credTxt">no credentials</span></span>
       <span id="todayTxt"></span>
+      <button class="ghost" style="padding:6px 12px" onclick="logout()">Logout</button>
     </div>
   </header>
 
   <!-- credentials -->
   <section class="frame section" id="credSection">
-    <h2>Woffu access</h2>
-    <div class="row">
-      <label class="fld">User (email)
-        <input type="text" id="cUser" placeholder="you@company.com" style="width:220px">
-      </label>
-      <label class="fld">Password
-        <input type="password" id="cPass" placeholder="••••••••" style="width:180px">
-      </label>
-      <button onclick="saveCreds()">Save and test</button>
-      <button class="ghost" onclick="signNow()">Punch now (test)</button>
-      <button class="ghost" onclick="fixNow()">Fix last night's shift</button>
+    <div class="section-toggle" onclick="toggleCredSection()" title="Show / hide">
+      <h2>Your Woffu account</h2>
+      <span class="chev" id="credChev">▼</span>
     </div>
-    <p class="note">Prefer environment variables <b>WOFFU_USERNAME</b> / <b>WOFFU_PASSWORD</b>.
-      If you save them here, they are written to <b>data/secrets.json</b> on disk (plain text).</p>
+    <div class="cred-body" id="credBody">
+      <div class="cred-edit-wrap" id="credEditWrap">
+        <button class="ghost" type="button" onclick="showCredForm()">Edit credentials</button>
+        <button class="ghost" onclick="signNow()">Punch now (test)</button>
+        <button class="ghost" onclick="fixNow()">Fix last night's shift</button>
+      </div>
+      <div class="cred-form" id="credForm">
+        <div class="row">
+          <label class="fld">User (email)
+            <input type="text" id="cUser" placeholder="you@company.com" style="width:220px">
+          </label>
+          <label class="fld">Password
+            <input type="password" id="cPass" placeholder="••••••••" style="width:180px">
+          </label>
+          <button onclick="saveCreds()">Save and test</button>
+          <button class="ghost" onclick="signNow()">Punch now (test)</button>
+          <button class="ghost" onclick="fixNow()">Fix last night's shift</button>
+        </div>
+        <p class="note">Each person saves <b>their own</b> Woffu login here. Schedules and punches are separate.
+          Stored under your account folder on the server (plain text).</p>
+      </div>
+    </div>
   </section>
 
   <!-- presets / paint -->
@@ -311,6 +343,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
 function laneOf(p){
   const n=(p.name||'').trim();
+  if(/^office$/i.test(n)) return 'short';
   if(/\sS$/i.test(n)) return 'short';
   if(/\sL$/i.test(n)) return 'long';
   return 'normal';
@@ -318,6 +351,7 @@ function laneOf(p){
 function toneOf(p){
   const raw=(p&&p.name)||'';
   const n=raw.toLowerCase();
+  if(n==='office') return 'office';
   let fam='work';
   if(n.includes('morning')) fam='morning';
   else if(n.includes('afternoon')) fam='afternoon';
@@ -332,6 +366,7 @@ function periodRank(p){
   if(n.includes('morning')) return 0;
   if(n.includes('afternoon')) return 1;
   if(n.includes('night')) return 2;
+  if(n==='office') return 8;
   return 9;
 }
 function presetForWork(work){
@@ -557,12 +592,78 @@ async function delDay(){await fetch('/api/day/'+editing,{method:'DELETE'});close
 
 function move(n){cur.setMonth(cur.getMonth()+n);loadMonth()}
 
+async function logout(){
+  await fetch('/api/auth/logout',{method:'POST'});
+  location.href='/acceso';
+}
+let credCollapseInited=false;
+let credEditing=false;
+function setCredCollapsed(collapsed){
+  document.getElementById('credSection').classList.toggle('collapsed', !!collapsed);
+}
+function toggleCredSection(){
+  document.getElementById('credSection').classList.toggle('collapsed');
+}
+function showCredForm(){
+  credEditing=true;
+  document.getElementById('credForm').classList.remove('hidden');
+  document.getElementById('credEditWrap').classList.remove('show');
+  setCredCollapsed(false);
+}
+function applyCredUi(s){
+  const dot=document.getElementById('credDot');
+  const txt=document.getElementById('credTxt');
+  const form=document.getElementById('credForm');
+  const edit=document.getElementById('credEditWrap');
+  txt.classList.remove('cred-ok-txt','cred-bad-txt');
+  if(s.credentials_ok){
+    dot.className='dot on';
+    txt.textContent='credentials OK';
+    txt.classList.add('cred-ok-txt');
+    if(!credEditing){
+      form.classList.add('hidden');
+      edit.classList.add('show');
+    }
+  }else if(s.credentials_bad){
+    dot.className='dot warn';
+    txt.textContent='Incorrect credentials';
+    txt.classList.add('cred-bad-txt');
+    form.classList.remove('hidden');
+    edit.classList.remove('show');
+    credEditing=false;
+  }else if(s.credentials){
+    dot.className='dot warn';
+    txt.textContent='credentials untested';
+    txt.classList.add('cred-bad-txt');
+    form.classList.remove('hidden');
+    edit.classList.remove('show');
+  }else{
+    dot.className='dot off';
+    txt.textContent='no credentials';
+    form.classList.remove('hidden');
+    edit.classList.remove('show');
+    credEditing=false;
+  }
+}
 async function loadStatus(){
   const s=await (await fetch('/api/status')).json();
-  document.getElementById('credDot').className='dot '+(s.credentials?'on':'off');
-  document.getElementById('credTxt').textContent=s.credentials?'credentials OK':'no credentials';
+  if(s.error==='Unauthorized' || (!s.today && s.credentials===undefined)){
+    location.href='/acceso'; return;
+  }
+  if(s.user) document.getElementById('who').textContent=s.user;
+  applyCredUi(s);
+  if(!credCollapseInited){
+    // verified OK → collapse; missing/bad → expand
+    setCredCollapsed(!!s.credentials_ok);
+    credCollapseInited=true;
+  }else if(!s.credentials || s.credentials_bad){
+    setCredCollapsed(false);
+  }
   let t=`today ${s.today} · ${s.now}`;
-  if(s.today_shift) t+=` · shift ${s.today_shift.in}–${s.today_shift.out}`;
+  if(s.today_shift){
+    if(s.today_shift.rest) t+=' · rest';
+    else if(s.today_shift.in) t+=` · shift ${s.today_shift.in}–${s.today_shift.out}`;
+  }
   const labels={in:'in',out:'out',fix:'fix',descanso:'rest'};
   if(s.today_done?.length) t+=` · ${s.today_done.map(a=>'✓'+(labels[a]||a)).join(' ')}`;
   document.getElementById('todayTxt').textContent=t;
@@ -574,8 +675,12 @@ async function saveCreds(){
   const r=await fetch('/api/credentials',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({username:u,password:p})});
   if(!r.ok){toast('Error saving');return}
-  const t=await (await fetch('/api/test-auth',{method:'POST'})).json();
-  toast(t.ok?'Connected to Woffu ✓':('Failed: '+t.error));
+  const tr=await fetch('/api/test-auth',{method:'POST'});
+  const t=await tr.json().catch(()=>({}));
+  toast(t.ok?'Connected to Woffu ✓':('Failed: '+(t.error||'auth failed')));
+  credEditing=!t.ok;
+  if(t.ok) setCredCollapsed(true);
+  else setCredCollapsed(false);
   loadStatus();
 }
 async function signNow(){
@@ -591,7 +696,11 @@ async function fixNow(){
 }
 
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal()});
-(async()=>{await loadSettings();await loadMonth();await loadStatus();setInterval(loadStatus,30000)})();
+(async()=>{
+  const me=await (await fetch('/api/auth/me')).json();
+  if(!me.user){ location.href='/acceso'; return; }
+  await loadSettings();await loadMonth();await loadStatus();setInterval(loadStatus,30000);
+})();
 </script>
 </body>
 </html>

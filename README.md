@@ -2,7 +2,7 @@
 
 Headless version: you manage it from the browser and the scheduler runs in a background thread. Built for a machine that stays on (VPS or Raspberry Pi). Includes jitter, shifts that cross midnight, night-shift corrections, rest-day absence requests, and 6 shift presets.
 
-> **Security**: the UI has **no login**. By default it listens on all interfaces (`0.0.0.0:5000`) so you can open `http://PI_IP:5000` from your PC on the same network. Anyone on that LAN/Wi-Fi can punch and see credentials. Do **not** port-forward 5000 on your router. For localhost-only, set `WOFFU_HOST=127.0.0.1` in `.env`.
+> **Security**: decoy at `/`, login at `/acceso`. Default listen `0.0.0.0:40`. Do **not** port-forward on the router unless you intend to. For localhost-only, set `WOFFU_HOST=127.0.0.1` in `.env`.
 
 ## Quick install (automatic script)
 
@@ -76,18 +76,18 @@ It starts on VPS reboot and restarts if it crashes.
 From your PC, on the same network as the Pi/VPS:
 
 ```
-http://PI_OR_VPS_LAN_IP:5000
+http://PI_OR_VPS_LAN_IP:40
 ```
 
-Example: `http://192.168.1.50:5000`. The scheduler keeps punching even if you close the browser; you only need the web UI to edit shifts.
+Example: `http://192.168.1.50:40`. The scheduler keeps punching even if you close the browser; you only need the web UI to edit shifts.
 
-If you prefer not to expose port 5000 on the LAN, set `WOFFU_HOST=127.0.0.1` in `.env` and use an SSH tunnel instead:
+If you prefer not to expose port 40 on the LAN, set `WOFFU_HOST=127.0.0.1` in `.env` and use an SSH tunnel instead:
 
 ```bash
-ssh -L 5000:localhost:5000 woffu@PI_OR_VPS_IP
+ssh -L 40:localhost:40 woffu@PI_OR_VPS_IP
 ```
 
-Then open **http://localhost:5000**.
+Then open **http://localhost:40**.
 
 ## 6. Logs
 
@@ -133,7 +133,7 @@ cd docker
 docker compose up -d --build
 ```
 
-Open `http://PI_OR_VPS_LAN_IP:5000` from your PC on the same network.
+Open `http://PI_OR_VPS_LAN_IP:40` from your PC on the same network.
 
 The compose file already uses `restart: unless-stopped`, so the container comes back after a crash. For that to survive a **power cut / reboot**, Docker itself must start on boot (Debian / Raspberry Pi):
 

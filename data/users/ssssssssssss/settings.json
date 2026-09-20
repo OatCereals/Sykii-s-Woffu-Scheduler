@@ -3,7 +3,7 @@
   "subdivision": "MD",
   "poll_seconds": 30,
   "jitter_minutes": 4,
-  "salt": "44314946ae01d518",
+  "salt": "8392879e83e1523c",
   "presets": [
     {
       "name": "Morning S",
@@ -88,6 +88,6 @@
     "enabled": true,
     "delay_min": 30,
     "delay_max": 180,
-    "out_source": "real"
+    "out_source": "auto"
   }
 }

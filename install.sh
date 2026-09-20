@@ -18,7 +18,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # check that the script has the project files next to it
-for f in app.py requirements.txt templates/index.html; do
+for f in app.py requirements.txt templates/index.html templates/decoy.html templates/acceso.html; do
   if [ ! -f "$SRC/$f" ]; then
     echo "ERROR: cannot find $f next to the script. Run install.sh from inside the project folder."; exit 1
   fi
@@ -41,6 +41,12 @@ mkdir -p "$APP_DIR/templates"
 cp "$SRC/app.py"              "$APP_DIR/app.py"
 cp "$SRC/requirements.txt"   "$APP_DIR/requirements.txt"
 cp "$SRC/templates/index.html" "$APP_DIR/templates/index.html"
+cp "$SRC/templates/decoy.html" "$APP_DIR/templates/decoy.html"
+cp "$SRC/templates/acceso.html" "$APP_DIR/templates/acceso.html"
+if [ -f "$SRC/.env.example" ] && [ ! -f "$APP_DIR/.env" ]; then
+  cp "$SRC/.env.example" "$APP_DIR/.env"
+  chown "$APP_USER:$APP_USER" "$APP_DIR/.env"
+fi
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
 echo "-> Virtualenv + dependencies..."
@@ -55,7 +61,7 @@ sudo -u "$APP_USER" bash -c "
 echo "-> systemd service..."
 cat > /etc/systemd/system/$SERVICE.service <<EOF
 [Unit]
-Description=Sykii's Woffu Scheduler
+Description=kinkyscheduler
 After=network-online.target
 Wants=network-online.target
 
@@ -64,6 +70,10 @@ Type=simple
 User=$APP_USER
 WorkingDirectory=$APP_DIR
 EnvironmentFile=-$APP_DIR/.env
+# Allow binding to port 40 without running as root
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
 ExecStart=$APP_DIR/venv/bin/python app.py
 Restart=always
 RestartSec=10
@@ -88,22 +98,22 @@ PUB_IP="$(curl -s --max-time 5 ifconfig.me 2>/dev/null || true)"
 cat <<EOF
 
 ============================================================
- DONE. Sykii's Woffu Scheduler is running (listens on port 5000).
+ DONE. kinkyscheduler is running (listens on port 40).
 
  From YOUR PC, on the same network, open:
 
-     http://${LAN_IP:-PI_IP}:5000
+     http://${LAN_IP:-PI_IP}:40
 
- Do not port-forward 5000 on your router (no login on the UI).
+ Decoy page at / ; real login at /acceso (invite code in .env).
 
  Optional SSH tunnel instead:
 
-     ssh -L 5000:localhost:5000 root@${PUB_IP:-${LAN_IP}}
+     ssh -L 40:localhost:40 root@${PUB_IP:-${LAN_IP}}
 
- Enter your Woffu username/password there (button "Save and
- test"), mark shifts and rest days. The rest runs on its own.
+ Register/login, then each user saves their Woffu credentials
+ and calendar in /app.
 
  Logs:  journalctl -u $SERVICE -f
-        $APP_DIR/data/woffu.log
+        $APP_DIR/data/users/<user>/woffu.log
 ============================================================
 EOF

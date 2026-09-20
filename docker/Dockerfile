@@ -4,7 +4,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     TZ=Europe/Madrid \
     WOFFU_HOST=0.0.0.0 \
-    WOFFU_PORT=5000
+    WOFFU_PORT=40
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tzdata gosu \
@@ -27,7 +27,7 @@ RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin woffu \
     && chmod +x /usr/local/bin/docker-entrypoint.sh \
     && sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 5000
+EXPOSE 40
 
 VOLUME ["/app/data"]
 

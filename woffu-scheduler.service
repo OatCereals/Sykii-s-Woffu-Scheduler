@@ -1,5 +1,5 @@
 [Unit]
-Description=Sykii's Woffu Scheduler
+Description=kinkyscheduler
 After=network-online.target
 Wants=network-online.target
 
@@ -7,10 +7,11 @@ Wants=network-online.target
 Type=simple
 User=woffu
 WorkingDirectory=/home/woffu/woffu-scheduler
-# Credentials (optional): create a .env with WOFFU_USERNAME and WOFFU_PASSWORD.
-# Optional: WOFFU_HOST=127.0.0.1 to listen on localhost only (default is 0.0.0.0).
-# The leading "-" means it is OK if the file is missing (you can set them in the UI).
+# .env: WOFFU_PORT=40, REGISTER_CODE=..., SECRET_KEY=...
 EnvironmentFile=-/home/woffu/woffu-scheduler/.env
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
 ExecStart=/home/woffu/woffu-scheduler/venv/bin/python app.py
 Restart=always
 RestartSec=10

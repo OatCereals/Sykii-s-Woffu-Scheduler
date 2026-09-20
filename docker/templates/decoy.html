@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prueba de Quejas</title>
+<style>
+  body { margin: 40px; background: #fff; color: #000; font-family: Times New Roman, Times, serif; font-size: 16px; }
+  h1 { font-size: 22px; font-weight: bold; margin: 0 0 8px; }
+  .sub { font-size: 13px; color: #333; margin-bottom: 24px; }
+  label { display: block; margin-top: 12px; }
+  input, textarea, select { width: 320px; max-width: 100%; font-family: inherit; font-size: 14px; }
+  textarea { height: 90px; }
+  button { margin-top: 16px; padding: 4px 14px; font-family: inherit; }
+  .msg { margin-top: 18px; color: green; display: none; }
+  .lang { margin-bottom: 20px; font-size: 13px; }
+  .lang a { color: blue; }
+  .foot { margin-top: 60px; font-size: 11px; color: #666; }
+  .foot a { color: #666; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="lang">
+  <span data-i18n="lang_label">Idioma:</span>
+  <a href="#" id="toEn" onclick="setLang('en');return false;">English</a>
+  /
+  <a href="#" id="toEs" onclick="setLang('es');return false;">Español</a>
+</div>
+
+<h1 data-i18n="title">Prueba de Quejas</h1>
+<p class="sub" data-i18n="sub">Formulario de prueba interno. No es un sistema real de reclamaciones.</p>
+
+<form id="f" onsubmit="return fakeSubmit()">
+  <label><span data-i18n="name">Nombre</span><br>
+    <input type="text" name="nombre">
+  </label>
+  <label><span data-i18n="email">Correo</span><br>
+    <input type="text" name="correo">
+  </label>
+  <label><span data-i18n="dept">Departamento</span><br>
+    <select name="dept">
+      <option data-i18n="dept1">Game presenters</option>
+      <option data-i18n="dept2">Shufflers</option>
+      <option data-i18n="dept3">Etc.</option>
+    </select>
+  </label>
+  <label><span data-i18n="msg">Mensaje / queja</span><br>
+    <textarea name="msg"></textarea>
+  </label>
+  <button type="submit" data-i18n="send">Enviar</button>
+</form>
+<p class="msg" id="ok" data-i18n="thanks">Gracias. Su mensaje ha sido registrado (prueba).</p>
+
+<p class="foot">
+  <span data-i18n="ver">v0.2 prueba</span>
+  &nbsp;·&nbsp;
+  <a href="/acceso" data-i18n="access">acceso soporte</a>
+</p>
+
+<script>
+const T = {
+  es: {
+    lang_label: "Idioma:",
+    title: "Prueba de Quejas",
+    sub: "Formulario de prueba interno. No es un sistema real de reclamaciones.",
+    name: "Nombre",
+    email: "Correo",
+    dept: "Departamento",
+    dept1: "Game presenters",
+    dept2: "Shufflers",
+    dept3: "Etc.",
+    msg: "Mensaje / queja",
+    send: "Enviar",
+    thanks: "Gracias. Su mensaje ha sido registrado (prueba).",
+    ver: "v0.2 prueba",
+    access: "acceso soporte"
+  },
+  en: {
+    lang_label: "Language:",
+    title: "Complaints Test",
+    sub: "Internal test form. This is not a real complaints system.",
+    name: "Name",
+    email: "Email",
+    dept: "Department",
+    dept1: "Game presenters",
+    dept2: "Shufflers",
+    dept3: "Etc.",
+    msg: "Message / complaint",
+    send: "Submit",
+    thanks: "Thank you. Your message was recorded (test).",
+    ver: "v0.2 test",
+    access: "support access"
+  }
+};
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.title = T[lang].title;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const k = el.getAttribute("data-i18n");
+    if (T[lang][k] != null) el.textContent = T[lang][k];
+  });
+  try { localStorage.setItem("quejas_lang", lang); } catch (e) {}
+}
+function fakeSubmit() {
+  document.getElementById("ok").style.display = "block";
+  return false;
+}
+setLang(localStorage.getItem("quejas_lang") || "es");
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@ Same app as the parent folder, packaged to run with Docker. Calendar, credential
 
 Works on a Raspberry Pi (ARM) and on a normal PC/VPS. Official `python:3.12-slim` images are multi-arch.
 
-> **Security**: the UI has **no login**. Port 5000 is published on the LAN. Anyone on your Wi-Fi can open it. Do **not** port-forward 5000 on the router.
+> **Security**: decoy at `/`, login at `/acceso`. Port **40** is published on the LAN. Do **not** port-forward on the router unless you intend to.
 
 ## Run
 
@@ -19,7 +19,7 @@ docker compose up -d --build
 From your PC, same network:
 
 ```
-http://PI_IP:5000
+http://PI_IP:40
 ```
 
 The compose file uses `restart: unless-stopped`, so the container restarts after a crash. For a **power cut / reboot**, enable Docker on boot (Debian / Raspberry Pi):
@@ -28,7 +28,17 @@ The compose file uses `restart: unless-stopped`, so the container restarts after
 sudo systemctl enable --now docker
 ```
 
-Then start once with `docker compose up -d`. When the PC comes back on, Docker starts and brings `woffu-scheduler` up again. No extra systemd unit is needed.
+Then start once with `docker compose up -d`. When the PC comes back on, Docker starts and brings `kinkyscheduler` up again. No extra systemd unit is needed.
+
+## Lock down files on the Pi
+
+Only you (the Linux owner) can read project/data files. Web users are unchanged; Docker can still write.
+
+```bash
+cd docker
+chmod +x lock-perms.sh
+./lock-perms.sh
+```
 
 Stop:
 
