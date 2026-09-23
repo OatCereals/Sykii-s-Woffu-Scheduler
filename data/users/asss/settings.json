@@ -4,7 +4,7 @@
   "poll_seconds": 30,
   "jitter_before_minutes": 2,
   "jitter_after_minutes": 1,
-  "salt": "c41f9ab7d6f1b3d1",
+  "salt": "6877d1cc21807b80",
   "presets": [
     {
       "name": "Morning S",

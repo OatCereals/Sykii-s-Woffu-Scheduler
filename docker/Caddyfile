@@ -1,0 +1,19 @@
+# kinkyscheduler — HTTPS on LAN port 7680 (fixed self-signed cert)
+# Open: https://iphonedefido:7680
+# First visit: Advanced → Proceed (self-signed warning is normal)
+
+{
+	auto_https off
+	servers {
+		protocols h1 h2
+	}
+}
+
+:7680 {
+	tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
+	encode gzip
+	header -Server
+	reverse_proxy woffu:5000 {
+		header_up X-Forwarded-Proto https
+	}
+}

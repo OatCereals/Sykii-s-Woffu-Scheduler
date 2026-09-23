@@ -4,7 +4,7 @@ Same app as the parent folder, packaged to run with Docker. Calendar, credential
 
 Works on a Raspberry Pi (ARM) and on a normal PC/VPS. Official `python:3.12-slim` images are multi-arch.
 
-> **Security**: decoy at `/`, login at `/acceso`. Port **40** is published on the LAN. Do **not** port-forward on the router unless you intend to.
+> **Security**: decoy at `/`, login at `/acceso`. **HTTPS** on host port **7680** by default (Caddy self-signed; change `PUBLISH_PORT` in `.env`). Open `https://PI_IP:7680`. Do **not** port-forward on the router.
 
 ## Run
 
@@ -19,9 +19,10 @@ docker compose up -d --build
 From your PC, same network:
 
 ```
-http://PI_IP:40
+https://PI_IP:7680
 ```
 
+(First visit: accept the self-signed certificate warning.) Change port via `PUBLISH_PORT` in `.env`. No 80/443.
 The compose file uses `restart: unless-stopped`, so the container restarts after a crash. For a **power cut / reboot**, enable Docker on boot (Debian / Raspberry Pi):
 
 ```bash

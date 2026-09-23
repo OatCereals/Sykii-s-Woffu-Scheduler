@@ -2,7 +2,8 @@
   "country": "ES",
   "subdivision": "MD",
   "poll_seconds": 30,
-  "jitter_minutes": 4,
+  "jitter_before_minutes": 2,
+  "jitter_after_minutes": 1,
   "salt": "44314946ae01d518",
   "presets": [
     {

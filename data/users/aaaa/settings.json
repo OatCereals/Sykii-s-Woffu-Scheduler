@@ -4,51 +4,51 @@
   "poll_seconds": 30,
   "jitter_before_minutes": 2,
   "jitter_after_minutes": 1,
-  "salt": "c41f9ab7d6f1b3d1",
+  "salt": "a28258db1de58231",
   "presets": [
     {
-      "name": "Morning S",
       "in": "06:50",
+      "name": "Morning S",
       "out": "13:50"
     },
     {
-      "name": "Morning",
       "in": "06:50",
+      "name": "Morning",
       "out": "14:50"
     },
     {
-      "name": "Morning L",
       "in": "06:50",
+      "name": "Morning L",
       "out": "15:50"
     },
     {
-      "name": "Afternoon S",
       "in": "16:50",
+      "name": "Afternoon S",
       "out": "22:50"
     },
     {
-      "name": "Afternoon",
       "in": "14:50",
+      "name": "Afternoon",
       "out": "22:50"
     },
     {
-      "name": "Afternoon L",
       "in": "13:50",
+      "name": "Afternoon L",
       "out": "22:50"
     },
     {
-      "name": "Night",
       "in": "22:50",
+      "name": "Night",
       "out": "06:50"
     },
     {
-      "name": "Night L",
       "in": "21:50",
+      "name": "Night L",
       "out": "06:50"
     },
     {
+      "in": "09:05",
       "name": "Office",
-      "in": "09:00",
       "out": "17:00"
     }
   ],

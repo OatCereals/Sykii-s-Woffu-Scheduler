@@ -19,6 +19,7 @@ from functools import wraps
 
 import requests
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import generate_password_hash, check_password_hash
 
 try:
@@ -59,7 +60,8 @@ load_env_file()
 
 DEFAULT_SETTINGS = {
     "country": "ES", "subdivision": "MD", "poll_seconds": 30,
-    "jitter_minutes": 4,
+    "jitter_before_minutes": 2,
+    "jitter_after_minutes": 1,
     "salt": "",
     "presets": [
         {"name": "Morning S", "in": "06:50", "out": "13:50"},
@@ -121,6 +123,11 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Set SESSION_COOKIE_SECURE=1 behind HTTPS (Caddy). Cookies won't send on plain HTTP.
+_secure = (os.environ.get("SESSION_COOKIE_SECURE") or "").strip().lower()
+app.config["SESSION_COOKIE_SECURE"] = _secure in ("1", "true", "yes", "on")
+# Trust X-Forwarded-* from the reverse proxy
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 
 # ----------------------------- env helpers -----------------------------
@@ -665,22 +672,30 @@ def hhmm_to_min(t):
     return int(hh) * 60 + int(mm)
 
 
-def jitter_delta(iso, action):
-    """How early to punch: 0 seconds through jitter_minutes exactly
-    (e.g. 4 -> 0:00 .. 4:00 before, so 2:13 early is allowed, 4:13 is not).
-    Deterministic per day and action so a restart does not pick a new time."""
+def jitter_offset(iso, action):
+    """Signed offset from the calendar time (deterministic per user/day/action).
+    Negative = before, positive = after. Uniform over
+    [-jitter_before_minutes, +jitter_after_minutes] in whole seconds.
+    Legacy key jitter_minutes is treated as before-only if before is unset."""
     s = get_settings()
-    jmax = int(s.get("jitter_minutes", 0))
-    if jmax <= 0:
+    before = s.get("jitter_before_minutes", None)
+    if before is None:
+        before = s.get("jitter_minutes", 2)
+    after = s.get("jitter_after_minutes", 0)
+    before = max(0, int(before or 0))
+    after = max(0, int(after or 0))
+    lo = -before * 60
+    hi = after * 60
+    if lo == 0 and hi == 0:
         return timedelta(0)
     salt = s.get("salt", "")
     h = hashlib.sha256(f'{salt}|{iso}|{action}'.encode()).hexdigest()
-    return timedelta(seconds=int(h, 16) % (jmax * 60 + 1))
+    return timedelta(seconds=lo + int(h, 16) % (hi - lo + 1))
 
 
 def due_at(day, hhmm, iso, action):
     hh, mm = hhmm.split(":")[:2]
-    return datetime(day.year, day.month, day.day, int(hh), int(mm), 0) - jitter_delta(iso, action)
+    return datetime(day.year, day.month, day.day, int(hh), int(mm), 0) + jitter_offset(iso, action)
 
 
 def correction_delay(iso):
@@ -1044,6 +1059,51 @@ def api_auto_rest_month(year, month):
         "skipped_weekend": skipped_weekend,
         "skipped_holiday": skipped_holiday,
         "skipped_shift": skipped_shift,
+    })
+
+
+@app.route("/api/month/<int:year>/<int:month>/auto-office", methods=["POST"])
+@login_required
+def api_auto_office_month(year, month):
+    """Fill empty weekdays with Office shift (09:00–17:00 by default).
+    Skip weekends, official holidays, and days that already have a shift or rest."""
+    if not (1 <= month <= 12) or year < 2000 or year > 2100:
+        return jsonify({"error": "Invalid month."}), 400
+    in_t, out_t = "09:00", "17:00"
+    for p in get_settings().get("presets") or []:
+        if (p.get("name") or "").strip().lower() == "office" and p.get("in") and p.get("out"):
+            in_t, out_t = p["in"], p["out"]
+            break
+    schedule = load_json(upath("schedule.json"), {})
+    start = date(year, month, 1)
+    end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+    marked = 0
+    skipped_weekend = 0
+    skipped_holiday = 0
+    skipped_busy = 0
+    d = start
+    while d < end:
+        key = d.isoformat()
+        existing = schedule.get(key)
+        if is_weekend(key):
+            skipped_weekend += 1
+        elif is_holiday(key):
+            skipped_holiday += 1
+        elif existing:
+            skipped_busy += 1
+        else:
+            schedule[key] = {"in": in_t, "out": out_t}
+            marked += 1
+        d += timedelta(days=1)
+    save_json(upath("schedule.json"), schedule)
+    return jsonify({
+        "ok": True,
+        "marked": marked,
+        "in": in_t,
+        "out": out_t,
+        "skipped_weekend": skipped_weekend,
+        "skipped_holiday": skipped_holiday,
+        "skipped_busy": skipped_busy,
     })
 
 

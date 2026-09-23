@@ -1,0 +1,19 @@
+2026-09-21 12:00:17 [aaaa] 2026-09-21 in FAIL (1/4): Auth failed (400). Check username/password.
+2026-09-21 12:00:47 [aaaa] 2026-09-21 in FAIL (2/4): Auth failed (400). Check username/password.
+2026-09-21 12:01:17 [aaaa] 2026-09-21 in FAIL (3/4): Auth failed (400). Check username/password.
+2026-09-21 12:01:48 [aaaa] 2026-09-21 in FAIL (4/4): Auth failed (400). Check username/password.
+2026-09-21 12:01:48 [aaaa] 2026-09-21 in: retry limit reached, giving up.
+2026-09-21 17:00:43 [aaaa] 2026-09-21 could not read workday before out: Auth failed (400). Check username/password.
+2026-09-21 17:00:43 [aaaa] 2026-09-21 out FAIL (1/4): Auth failed (400). Check username/password.
+2026-09-21 17:01:14 [aaaa] 2026-09-21 could not read workday before out: Auth failed (400). Check username/password.
+2026-09-21 17:01:14 [aaaa] 2026-09-21 out FAIL (2/4): Auth failed (400). Check username/password.
+2026-09-21 17:01:45 [aaaa] 2026-09-21 could not read workday before out: Auth failed (400). Check username/password.
+2026-09-21 17:01:45 [aaaa] 2026-09-21 out FAIL (3/4): Auth failed (400). Check username/password.
+2026-09-21 17:02:15 [aaaa] 2026-09-21 could not read workday before out: Auth failed (400). Check username/password.
+2026-09-21 17:02:16 [aaaa] 2026-09-21 out FAIL (4/4): Auth failed (400). Check username/password.
+2026-09-21 17:02:16 [aaaa] 2026-09-21 out: retry limit reached, giving up.
+2026-09-21 17:03:39 [aaaa] 2026-09-21 correction FAIL (1/4): Auth failed (400). Check username/password.
+2026-09-21 17:04:09 [aaaa] 2026-09-21 correction FAIL (2/4): Auth failed (400). Check username/password.
+2026-09-21 17:04:40 [aaaa] 2026-09-21 correction FAIL (3/4): Auth failed (400). Check username/password.
+2026-09-21 17:05:10 [aaaa] 2026-09-21 correction FAIL (4/4): Auth failed (400). Check username/password.
+2026-09-21 17:05:10 [aaaa] 2026-09-21 correction: retry limit reached, giving up.

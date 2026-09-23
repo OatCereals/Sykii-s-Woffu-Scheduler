@@ -265,13 +265,17 @@
       <span class="pill" id="paintToggle" onclick="togglePaint()">Paint mode: OFF</span>
       <span class="pill rest-pill" id="paintRest" onclick="selectRestBrush()">Rest</span>
       <span class="note" id="paintHint">Click a shift (or Rest) to paint. Then click days on the calendar. Click a day again to clear it. Weekends and official festivos cannot be rest — Woffu already treats them as rest unless you add a shift.</span>
-      <span style="margin-left:auto; display:flex; align-items:center; gap:8px">
-        <label class="fld" style="flex-direction:row; align-items:center; gap:6px">Jitter (min)
-          <input type="text" id="jitter" style="width:48px" onchange="saveJitter()">
+      <span style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <label class="fld" style="flex-direction:row; align-items:center; gap:6px">Before (min)
+          <input type="text" id="jitterBefore" style="width:48px" onchange="saveJitter()">
+        </label>
+        <label class="fld" style="flex-direction:row; align-items:center; gap:6px">After (min)
+          <input type="text" id="jitterAfter" style="width:48px" onchange="saveJitter()">
         </label>
       </span>
     </div>
-    <p class="note" style="margin-top:8px">Jitter: punch anywhere from 0:00 to N:00 <b>before</b> the shift (e.g. 4 → 07:46:00 … 07:50:00, including 07:47:13). Same day always gets the same time. 0 = exact time.</p>
+    <p class="note" style="margin-top:8px">Jitter window around each punch: from <b>Before</b> minutes early to <b>After</b> minutes late
+      (e.g. 2 &amp; 1 at 14:50 → anywhere from 14:48:00 to 14:51:00). Same day/action always gets the same time. 0 / 0 = exact.</p>
   </section>
 
   <!-- calendar -->
@@ -281,9 +285,10 @@
       <div class="month" id="monthLbl"></div>
       <div class="nav"><button class="ghost" onclick="move(1)">›</button></div>
     </div>
-    <div class="row" style="margin-bottom:12px; justify-content:space-between">
+    <div class="row" style="margin-bottom:12px; justify-content:space-between; gap:10px; flex-wrap:wrap">
       <button class="ghost" style="border-color:#6B778C;color:#F0E6D2" onclick="autoRestMonth()">☾ Auto rest this month</button>
-      <span class="note" style="margin:0">Fills empty weekdays. Skips shifts, weekends, and official ES/Madrid festivos.</span>
+      <button class="ghost" style="border-color:#0AC8B9;color:#7EF0E8" onclick="autoOfficeMonth()">⌂ Fill Office this month</button>
+      <span class="note" style="margin:0;flex:1">Empty weekdays only. Skips weekends, festivos, and days that already have a shift/rest.</span>
       <button class="danger" style="margin-left:auto" onclick="clearMonth()">Clear calendar</button>
     </div>
     <div class="grid" id="weekdays"></div>
@@ -376,15 +381,21 @@ function presetForWork(work){
 
 async function loadSettings(){
   settings=await (await fetch('/api/settings')).json();
-  document.getElementById('jitter').value = settings.jitter_minutes ?? 4;
+  const before=settings.jitter_before_minutes ?? settings.jitter_minutes ?? 2;
+  const after=settings.jitter_after_minutes ?? 0;
+  document.getElementById('jitterBefore').value = before;
+  document.getElementById('jitterAfter').value = after;
   renderPresets();
 }
 async function saveJitter(){
-  let v=parseInt(document.getElementById('jitter').value,10);
-  if(isNaN(v)||v<0){v=0; document.getElementById('jitter').value=0;}
-  settings.jitter_minutes=v;
+  let b=parseInt(document.getElementById('jitterBefore').value,10);
+  let a=parseInt(document.getElementById('jitterAfter').value,10);
+  if(isNaN(b)||b<0){b=0; document.getElementById('jitterBefore').value=0;}
+  if(isNaN(a)||a<0){a=0; document.getElementById('jitterAfter').value=0;}
+  settings.jitter_before_minutes=b;
+  settings.jitter_after_minutes=a;
   await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({jitter_minutes:v})});
+    body:JSON.stringify({jitter_before_minutes:b,jitter_after_minutes:a})});
   toast('Jitter updated');
 }
 function renderPresets(){
@@ -576,6 +587,16 @@ async function autoRestMonth(){
   const n=t.marked||0;
   if(!n) toast('Nothing to fill — weekdays already have a shift or rest');
   else toast(`Rest set on ${n} weekday${n===1?'':'s'} (skipped shifts, weekends & festivos)`);
+  loadMonth();
+}
+async function autoOfficeMonth(){
+  const y=cur.getFullYear(), m=cur.getMonth()+1;
+  const r=await fetch(`/api/month/${y}/${m}/auto-office`,{method:'POST'});
+  const t=await r.json().catch(()=>({}));
+  if(!r.ok){ toast(t.error||'Could not fill Office'); return; }
+  const n=t.marked||0;
+  if(!n) toast('Nothing to fill — weekdays already have a shift or rest');
+  else toast(`Office ${t.in||'09:00'}–${t.out||'17:00'} on ${n} weekday${n===1?'':'s'}`);
   loadMonth();
 }
 async function clearMonth(){

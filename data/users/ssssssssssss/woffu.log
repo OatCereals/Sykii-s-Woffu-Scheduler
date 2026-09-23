@@ -1,0 +1,5 @@
+2026-09-21 11:52:45 [ssssssssssss] 2026-09-21 rest FAIL (1/4): Auth failed (400). Check username/password.
+2026-09-21 11:53:15 [ssssssssssss] 2026-09-21 rest FAIL (2/4): Auth failed (400). Check username/password.
+2026-09-21 11:53:46 [ssssssssssss] 2026-09-21 rest FAIL (3/4): Auth failed (400). Check username/password.
+2026-09-21 11:54:16 [ssssssssssss] 2026-09-21 rest FAIL (4/4): Auth failed (400). Check username/password.
+2026-09-21 11:54:16 [ssssssssssss] 2026-09-21 rest: retry limit reached, giving up.
