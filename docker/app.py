@@ -474,17 +474,25 @@ def fetch_workday(iso):
     }
 
 
+def _slot_has_real_out(slot):
+    """True only if Woffu has an actual clock-out time (not an empty/planned out)."""
+    if not slot:
+        return False
+    return bool(_real_out_hhmmss(slot.get("out") or {}))
+
+
 def _night_slot(workday):
     """Slot for a shift that crosses midnight (real out < real in). If there is
-    no clear crossing, the first slot with in and out."""
+    no clear crossing, the first slot with real in and out times."""
     slots = workday.get("slots") or []
     for sl in slots:
         i, o = sl.get("in") or {}, sl.get("out") or {}
-        ti, to = i.get("shortTime"), o.get("shortTime")
+        ti, to = i.get("shortTime") or i.get("time"), _real_out_hhmmss(o)
         if ti and to and _hhmmss_to_sec(to) < _hhmmss_to_sec(ti):
             return sl
     for sl in slots:
-        if sl.get("in") and sl.get("out"):
+        i = sl.get("in") or {}
+        if (i.get("shortTime") or i.get("time")) and _slot_has_real_out(sl):
             return sl
     return None
 
@@ -520,14 +528,13 @@ def _target_out_hhmmss(iso, slot):
 
 
 def shift_already_has_out(iso):
-    """True if Woffu already closed the day's slot (auto-close at 7h15)."""
+    """True if Woffu already closed the day's slot with a real out timestamp."""
     try:
         wd = fetch_workday(iso)
     except (WoffuError, requests.RequestException) as e:
         log(f"{iso} could not read workday before out: {e}")
         return False
-    sl = _night_slot(wd)
-    return bool(sl and sl.get("out"))
+    return _slot_has_real_out(_night_slot(wd))
 
 
 def send_correction(iso, workday=None):
@@ -675,15 +682,30 @@ def hhmm_to_min(t):
 def jitter_offset(iso, action):
     """Signed offset from the calendar time (deterministic per user/day/action).
     Negative = before, positive = after. Uniform over
-    [-jitter_before_minutes, +jitter_after_minutes] in whole seconds.
-    Legacy key jitter_minutes is treated as before-only if before is unset."""
+    [-before_min, +after_min] in whole seconds.
+
+    Per-action keys (preferred):
+      jitter_in_before_minutes / jitter_in_after_minutes
+      jitter_out_before_minutes / jitter_out_after_minutes
+    Fall back to global jitter_before_minutes / jitter_after_minutes
+    (legacy jitter_minutes = before-only if before unset)."""
     s = get_settings()
-    before = s.get("jitter_before_minutes", None)
-    if before is None:
-        before = s.get("jitter_minutes", 2)
-    after = s.get("jitter_after_minutes", 0)
-    before = max(0, int(before or 0))
-    after = max(0, int(after or 0))
+    global_before = s.get("jitter_before_minutes", None)
+    if global_before is None:
+        global_before = s.get("jitter_minutes", 2)
+    global_after = s.get("jitter_after_minutes", 0)
+
+    if action == "in":
+        before = s.get("jitter_in_before_minutes", global_before)
+        after = s.get("jitter_in_after_minutes", global_after)
+    elif action == "out":
+        before = s.get("jitter_out_before_minutes", global_before)
+        after = s.get("jitter_out_after_minutes", global_after)
+    else:
+        before, after = global_before, global_after
+
+    before = max(0, int(before if before is not None else 0))
+    after = max(0, int(after if after is not None else 0))
     lo = -before * 60
     hi = after * 60
     if lo == 0 and hi == 0:

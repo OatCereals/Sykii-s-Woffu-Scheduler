@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#091428">
 <title>kinkyscheduler</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -85,7 +86,6 @@
 
   /* presets */
   .preset-board{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px}
-  @media (max-width:780px){.preset-board{grid-template-columns:1fr}}
   .preset-col{padding:12px; border:1px solid var(--line); background:#0a1c34}
   .preset-col h3{font-family:'Cinzel',serif; font-size:11px; letter-spacing:.14em;
     text-transform:uppercase; color:var(--gold); margin:0 0 10px}
@@ -207,9 +207,94 @@
   .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
     background:#0c2742; border:1px solid var(--gold-d); color:var(--gold-l);
     padding:11px 20px; font-size:13px; z-index:50; opacity:0; transition:.25s;
-    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    max-width:calc(100vw - 24px)}
   .toast.show{opacity:1}
   .row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+  .month-actions{display:flex; margin-bottom:12px; justify-content:space-between; gap:10px; flex-wrap:wrap}
+  .jitter-panel{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .jitter-card{padding:14px; border:1px solid var(--line); background:#0a1c34}
+  .jitter-card h3{font-family:'Cinzel',serif; font-size:12px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--gold); margin:0 0 12px}
+  .jitter-fields{display:flex; flex-direction:column; gap:10px}
+  .jitter-line{display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    font-size:13px; color:var(--text)}
+  .jitter-line input{width:56px; text-align:center}
+  .jitter-line .tag{font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); min-width:3.5em}
+  .jitter-example{font-size:12px; color:var(--teal); margin:12px 0 0; line-height:1.45}
+  .jitter-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+  .cred-form input[type=text], .cred-form input[type=password]{width:100%; max-width:280px}
+
+  /* phone / narrow */
+  @media (max-width:780px){
+    .preset-board{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    body{padding:14px 10px calc(28px + env(safe-area-inset-bottom,0px));
+      padding-left:max(10px, env(safe-area-inset-left));
+      padding-right:max(10px, env(safe-area-inset-right))}
+    .brand{flex-wrap:wrap; gap:4px 10px}
+    .brand h1{font-size:18px; letter-spacing:.1em}
+    .brand .sub{font-size:10px; letter-spacing:.18em; width:100%}
+    header.top{gap:10px; margin-bottom:14px}
+    .statuschip{width:100%; flex-wrap:wrap; gap:8px 12px; font-size:12px;
+      justify-content:space-between}
+    .statuschip button{margin-left:auto; min-height:40px; padding:8px 14px}
+    .section{padding:14px 12px; margin-bottom:12px}
+    .section h2{font-size:12px; margin-bottom:12px}
+    button{min-height:42px; padding:10px 14px; font-size:13px}
+    input[type=time],input[type=text],input[type=password]{
+      min-height:42px; font-size:16px; /* avoid iOS zoom */
+      width:100%}
+    .cred-form .row{flex-direction:column; align-items:stretch}
+    .cred-form label.fld{width:100%}
+    .cred-form input[type=text], .cred-form input[type=password]{max-width:none}
+    .cred-form .row > button{width:100%}
+    .cred-edit-wrap.show{flex-direction:column; align-items:stretch}
+    .cred-edit-wrap.show button{width:100%}
+    .preset-col{padding:10px}
+    .preset{padding:12px}
+    .preset .times{flex-direction:column}
+    .preset .times label.fld{width:100%}
+    .paintbar{flex-direction:column; align-items:stretch; gap:8px}
+    .paintbar .pill{text-align:center; min-height:42px; display:flex; align-items:center; justify-content:center}
+    .jitter-panel{grid-template-columns:1fr}
+    .jitter-line{justify-content:space-between}
+    .jitter-line input{min-height:42px; font-size:16px; width:64px}
+    .jitter-actions button{width:100%}
+    #paintHint, .note-long{display:none}
+    .note-short{display:block !important}
+    .month-actions{flex-direction:column; align-items:stretch}
+    .month-actions button{width:100%; margin-left:0 !important}
+    .month-actions .note{display:none}
+    .calhead .month{font-size:15px; letter-spacing:.06em}
+    .nav button{min-width:44px; min-height:44px; padding:8px 12px; font-size:18px}
+    .grid{gap:4px}
+    .wd{font-size:9px; letter-spacing:.08em; padding-bottom:2px}
+    .cell{min-height:56px; padding:5px 4px; -webkit-tap-highlight-color:transparent}
+    .cell .num{font-size:12px}
+    .shift{margin-top:3px; font-size:9px; line-height:1.25}
+    .shift .shiftname{font-size:10px; margin-bottom:1px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+    .shift b{font-size:9px}
+    .restlbl{margin-top:4px; font-size:10px}
+    .hollbl{margin-top:3px; font-size:8px; max-height:2.4em; overflow:hidden}
+    .done{bottom:3px; right:4px; font-size:8px; letter-spacing:.04em}
+    .ov{align-items:flex-end; padding:0}
+    .ov.show{display:flex}
+    .modal{width:100%; max-width:100%; max-height:92vh; overflow:auto;
+      padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));
+      border-radius:0; clip-path:none}
+    .modal.frame::before{clip-path:none}
+    .timegrid{flex-direction:column; gap:10px}
+    .timegrid label.fld{width:100%}
+    .modal .actions{flex-direction:column-reverse; gap:8px}
+    .modal .actions > div{display:flex; flex-direction:column; gap:8px; width:100%}
+    .modal .actions button{width:100%}
+    .toast{bottom:max(14px, env(safe-area-inset-bottom)); font-size:12px; padding:10px 14px}
+  }
+  .note-short{display:none}
 </style>
 </head>
 <body>
@@ -242,10 +327,10 @@
       <div class="cred-form" id="credForm">
         <div class="row">
           <label class="fld">User (email)
-            <input type="text" id="cUser" placeholder="you@company.com" style="width:220px">
+            <input type="text" id="cUser" placeholder="you@company.com" autocomplete="username">
           </label>
           <label class="fld">Password
-            <input type="password" id="cPass" placeholder="••••••••" style="width:180px">
+            <input type="password" id="cPass" placeholder="••••••••" autocomplete="current-password">
           </label>
           <button onclick="saveCreds()">Save and test</button>
           <button class="ghost" onclick="signNow()">Punch now (test)</button>
@@ -265,17 +350,57 @@
       <span class="pill" id="paintToggle" onclick="togglePaint()">Paint mode: OFF</span>
       <span class="pill rest-pill" id="paintRest" onclick="selectRestBrush()">Rest</span>
       <span class="note" id="paintHint">Click a shift (or Rest) to paint. Then click days on the calendar. Click a day again to clear it. Weekends and official festivos cannot be rest — Woffu already treats them as rest unless you add a shift.</span>
-      <span style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
-        <label class="fld" style="flex-direction:row; align-items:center; gap:6px">Before (min)
-          <input type="text" id="jitterBefore" style="width:48px" onchange="saveJitter()">
-        </label>
-        <label class="fld" style="flex-direction:row; align-items:center; gap:6px">After (min)
-          <input type="text" id="jitterAfter" style="width:48px" onchange="saveJitter()">
-        </label>
-      </span>
+      <span class="note note-short">Tap a shift (or Rest), then tap days. Tap again to clear.</span>
     </div>
-    <p class="note" style="margin-top:8px">Jitter window around each punch: from <b>Before</b> minutes early to <b>After</b> minutes late
-      (e.g. 2 &amp; 1 at 14:50 → anywhere from 14:48:00 to 14:51:00). Same day/action always gets the same time. 0 / 0 = exact.</p>
+  </section>
+
+  <!-- jitter -->
+  <section class="frame section">
+    <h2>Punch timing (jitter)</h2>
+    <p class="note">Pick how early/late each punch may land. Clock-in and clock-out are separate.
+      Same day always gets the same random time (not re-rolled every run). 0 / 0 = exact calendar time.</p>
+    <div class="jitter-panel">
+      <div class="jitter-card">
+        <h3>Clock in</h3>
+        <div class="jitter-fields">
+          <div class="jitter-line">
+            <span class="tag">Early</span>
+            <span>up to</span>
+            <input type="text" id="jinBefore" inputmode="numeric" onchange="saveJitter()" oninput="updateJitterExamples()">
+            <span>min before shift start</span>
+          </div>
+          <div class="jitter-line">
+            <span class="tag">Late</span>
+            <span>up to</span>
+            <input type="text" id="jinAfter" inputmode="numeric" onchange="saveJitter()" oninput="updateJitterExamples()">
+            <span>min after shift start</span>
+          </div>
+        </div>
+        <p class="jitter-example" id="jinExample"></p>
+      </div>
+      <div class="jitter-card">
+        <h3>Clock out</h3>
+        <div class="jitter-fields">
+          <div class="jitter-line">
+            <span class="tag">Early</span>
+            <span>up to</span>
+            <input type="text" id="joutBefore" inputmode="numeric" onchange="saveJitter()" oninput="updateJitterExamples()">
+            <span>min before shift end</span>
+          </div>
+          <div class="jitter-line">
+            <span class="tag">Late</span>
+            <span>up to</span>
+            <input type="text" id="joutAfter" inputmode="numeric" onchange="saveJitter()" oninput="updateJitterExamples()">
+            <span>min after shift end</span>
+          </div>
+        </div>
+        <p class="jitter-example" id="joutExample"></p>
+      </div>
+    </div>
+    <div class="jitter-actions">
+      <button class="ghost" type="button" onclick="copyJitterInToOut()">Copy clock-in → clock-out</button>
+      <button class="ghost" type="button" onclick="saveJitter()">Save timing</button>
+    </div>
   </section>
 
   <!-- calendar -->
@@ -285,7 +410,7 @@
       <div class="month" id="monthLbl"></div>
       <div class="nav"><button class="ghost" onclick="move(1)">›</button></div>
     </div>
-    <div class="row" style="margin-bottom:12px; justify-content:space-between; gap:10px; flex-wrap:wrap">
+    <div class="month-actions">
       <button class="ghost" style="border-color:#6B778C;color:#F0E6D2" onclick="autoRestMonth()">☾ Auto rest this month</button>
       <button class="ghost" style="border-color:#0AC8B9;color:#7EF0E8" onclick="autoOfficeMonth()">⌂ Fill Office this month</button>
       <span class="note" style="margin:0;flex:1">Empty weekdays only. Skips weekends, festivos, and days that already have a shift/rest.</span>
@@ -293,8 +418,9 @@
     </div>
     <div class="grid" id="weekdays"></div>
     <div class="grid" id="cal" style="margin-top:7px"></div>
-    <p class="note" style="margin-top:16px">Red number + name = official festivo (Spain / Madrid). You can still add a shift that day. Morning: pale yellow / gold / orange. Afternoon: mint / green / forest. Night: cyan / blue / purple. Slate + cream = rest. Weekends and festivos stay empty unless you add a shift — Woffu already treats them as rest.
+    <p class="note note-long" style="margin-top:16px">Red number + name = official festivo (Spain / Madrid). You can still add a shift that day. Morning: pale yellow / gold / orange. Afternoon: mint / green / forest. Night: cyan / blue / purple. Slate + cream = rest. Weekends and festivos stay empty unless you add a shift — Woffu already treats them as rest.
       The app must be <b>running</b> for it to punch at each shift time.</p>
+    <p class="note note-short" style="margin-top:12px">Colors = shift type. Festivos show in red. App must stay running to punch.</p>
   </section>
 </div>
 
@@ -381,22 +507,64 @@ function presetForWork(work){
 
 async function loadSettings(){
   settings=await (await fetch('/api/settings')).json();
-  const before=settings.jitter_before_minutes ?? settings.jitter_minutes ?? 2;
-  const after=settings.jitter_after_minutes ?? 0;
-  document.getElementById('jitterBefore').value = before;
-  document.getElementById('jitterAfter').value = after;
+  const gBefore=settings.jitter_before_minutes ?? settings.jitter_minutes ?? 2;
+  const gAfter=settings.jitter_after_minutes ?? 0;
+  document.getElementById('jinBefore').value = settings.jitter_in_before_minutes ?? gBefore;
+  document.getElementById('jinAfter').value = settings.jitter_in_after_minutes ?? gAfter;
+  document.getElementById('joutBefore').value = settings.jitter_out_before_minutes ?? gBefore;
+  document.getElementById('joutAfter').value = settings.jitter_out_after_minutes ?? gAfter;
+  updateJitterExamples();
   renderPresets();
 }
+function readJitterVal(id){
+  let v=parseInt(document.getElementById(id).value,10);
+  if(isNaN(v)||v<0){v=0; document.getElementById(id).value=0;}
+  return v;
+}
+function peekJitterVal(id){
+  let v=parseInt(document.getElementById(id).value,10);
+  return (isNaN(v)||v<0)?0:v;
+}
+function fmtJitterWindow(hhmm, before, after){
+  const [h,m]=hhmm.split(':').map(Number);
+  const base=h*60+m;
+  const lo=base-before, hi=base+after;
+  const fmt=n=>{const x=((n%1440)+1440)%1440; return `${String(Math.floor(x/60)).padStart(2,'0')}:${String(x%60).padStart(2,'0')}`;}
+  if(before===0&&after===0) return `${hhmm} exact`;
+  return `${fmt(lo)} → ${fmt(hi)} (around ${hhmm})`;
+}
+function updateJitterExamples(){
+  const ib=peekJitterVal('jinBefore'), ia=peekJitterVal('jinAfter');
+  const ob=peekJitterVal('joutBefore'), oa=peekJitterVal('joutAfter');
+  document.getElementById('jinExample').textContent =
+    `Example Office in 09:00 → ${fmtJitterWindow('09:00', ib, ia)}`;
+  document.getElementById('joutExample').textContent =
+    `Example Office out 17:00 → ${fmtJitterWindow('17:00', ob, oa)}`;
+}
+function copyJitterInToOut(){
+  document.getElementById('joutBefore').value=document.getElementById('jinBefore').value;
+  document.getElementById('joutAfter').value=document.getElementById('jinAfter').value;
+  updateJitterExamples();
+  saveJitter();
+}
 async function saveJitter(){
-  let b=parseInt(document.getElementById('jitterBefore').value,10);
-  let a=parseInt(document.getElementById('jitterAfter').value,10);
-  if(isNaN(b)||b<0){b=0; document.getElementById('jitterBefore').value=0;}
-  if(isNaN(a)||a<0){a=0; document.getElementById('jitterAfter').value=0;}
-  settings.jitter_before_minutes=b;
-  settings.jitter_after_minutes=a;
+  const ib=readJitterVal('jinBefore'), ia=readJitterVal('jinAfter');
+  const ob=readJitterVal('joutBefore'), oa=readJitterVal('joutAfter');
+  settings.jitter_in_before_minutes=ib;
+  settings.jitter_in_after_minutes=ia;
+  settings.jitter_out_before_minutes=ob;
+  settings.jitter_out_after_minutes=oa;
+  // keep legacy globals in sync with clock-in (older installs / docs)
+  settings.jitter_before_minutes=ib;
+  settings.jitter_after_minutes=ia;
+  updateJitterExamples();
   await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({jitter_before_minutes:b,jitter_after_minutes:a})});
-  toast('Jitter updated');
+    body:JSON.stringify({
+      jitter_in_before_minutes:ib, jitter_in_after_minutes:ia,
+      jitter_out_before_minutes:ob, jitter_out_after_minutes:oa,
+      jitter_before_minutes:ib, jitter_after_minutes:ia
+    })});
+  toast('Punch timing saved');
 }
 function renderPresets(){
   const box=document.getElementById('presets'); box.innerHTML='';
