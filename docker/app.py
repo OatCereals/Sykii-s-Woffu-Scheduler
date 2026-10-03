@@ -474,27 +474,96 @@ def fetch_workday(iso):
     }
 
 
+def _side_time(side):
+    side = side or {}
+    return side.get("shortTime") or side.get("time")
+
+
+def _sign_id(side):
+    side = side or {}
+    sid = side.get("signId", side.get("SignId", 0))
+    try:
+        return int(sid or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _sign_type(side):
+    side = side or {}
+    st = side.get("signType", side.get("SignType"))
+    try:
+        return int(st) if st is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_real_sign(side):
+    """True if this in/out is an actual punch/auto-close, not a schedule proposal.
+
+    Office workdays often return 2 slots with times filled in and signId=0 —
+    those are the UI's theoretical schedule, NOT a real clock-out. Treating
+    them as closed made us skip the evening punch."""
+    if not side or not _side_time(side):
+        return False
+    if _sign_id(side) > 0:
+        return True
+    st = _sign_type(side)
+    # signType 1 = proposal; 3 = manual/corrected; 5 = auto-close (seen in app)
+    return st is not None and st != 1
+
+
+def _slot_in_time(slot):
+    return _side_time((slot or {}).get("in"))
+
+
 def _slot_has_real_out(slot):
-    """True only if Woffu has an actual clock-out time (not an empty/planned out)."""
+    """True only if Woffu has an actual clock-out sign (not a proposal out)."""
     if not slot:
         return False
-    return bool(_real_out_hhmmss(slot.get("out") or {}))
+    return _is_real_sign(slot.get("out"))
+
+
+def _slot_has_real_in(slot):
+    if not slot:
+        return False
+    return _is_real_sign(slot.get("in"))
+
+
+def _slot_brief(slot):
+    """Short log line for a slot (times + whether signs look real)."""
+    inn, out = (slot or {}).get("in") or {}, (slot or {}).get("out") or {}
+    ti = _side_time(inn) or "-"
+    to = _side_time(out) or "-"
+    ri = "real" if _is_real_sign(inn) else f"prop/sid{_sign_id(inn)}"
+    ro = "real" if _is_real_sign(out) else f"prop/sid{_sign_id(out)}"
+    return f"{ti}({ri})->{to}({ro})"
+
+
+def _open_slots(workday):
+    """Segments with a real clock-in but no real clock-out (still open)."""
+    return [
+        sl for sl in (workday.get("slots") or [])
+        if _slot_has_real_in(sl) and not _slot_has_real_out(sl)
+    ]
+
+
+def _closed_slots(workday):
+    return [
+        sl for sl in (workday.get("slots") or [])
+        if _slot_has_real_in(sl) and _slot_has_real_out(sl)
+    ]
 
 
 def _night_slot(workday):
-    """Slot for a shift that crosses midnight (real out < real in). If there is
-    no clear crossing, the first slot with real in and out times."""
-    slots = workday.get("slots") or []
-    for sl in slots:
-        i, o = sl.get("in") or {}, sl.get("out") or {}
-        ti, to = i.get("shortTime") or i.get("time"), _real_out_hhmmss(o)
+    """Slot for a shift that crosses midnight (real out < real in). Otherwise the
+    last closed slot (end-of-day), not the first — Office days often have a lunch
+    slot closed while the afternoon segment is still open."""
+    for sl in _closed_slots(workday):
+        ti, to = _slot_in_time(sl), _real_out_hhmmss((sl.get("out") or {}))
         if ti and to and _hhmmss_to_sec(to) < _hhmmss_to_sec(ti):
             return sl
-    for sl in slots:
-        i = sl.get("in") or {}
-        if (i.get("shortTime") or i.get("time")) and _slot_has_real_out(sl):
-            return sl
-    return None
+    closed = _closed_slots(workday)
+    return closed[-1] if closed else None
 
 
 def _real_out_hhmmss(out):
@@ -528,13 +597,27 @@ def _target_out_hhmmss(iso, slot):
 
 
 def shift_already_has_out(iso):
-    """True if Woffu already closed the day's slot with a real out timestamp."""
+    """True only if every started segment is closed (no open slot left).
+
+    Office / split days often have 2 slots (morning+lunch out, afternoon still
+    open). Treating 'any closed slot' as done skipped the real clock-out."""
     try:
         wd = fetch_workday(iso)
     except (WoffuError, requests.RequestException) as e:
         log(f"{iso} could not read workday before out: {e}")
         return False
-    return _slot_has_real_out(_night_slot(wd))
+    slots = wd.get("slots") or []
+    briefs = ", ".join(_slot_brief(sl) for sl in slots) or "(none)"
+    open_sl = _open_slots(wd)
+    if open_sl:
+        log(f"{iso} still open — slots=[{briefs}]; will punch out")
+        return False
+    closed = _closed_slots(wd)
+    if closed:
+        log(f"{iso} all segments closed — slots=[{briefs}]; skip punch, will correct")
+        return True
+    log(f"{iso} no closed segment yet — slots=[{briefs}]; will punch out")
+    return False
 
 
 def send_correction(iso, workday=None):
@@ -543,6 +626,9 @@ def send_correction(iso, workday=None):
     domain, user_id, _ = get_ids()
     if workday is None:
         workday = fetch_workday(iso)
+    # Never correct while a segment is still open — punch first.
+    if _open_slots(workday):
+        raise WoffuAlreadyDone(f"{iso}: open slot still; skip correction.")
     slot = _night_slot(workday)
     if not slot:
         raise WoffuAlreadyDone(f"{iso}: no in+out shift to correct.")
@@ -556,8 +642,12 @@ def send_correction(iso, workday=None):
     hh, mm = target.split(":")[0], target.split(":")[1]
     target = f"{hh}:{mm}:00"
 
-    # Current effective out (what Woffu counts). If it already covers the target, nothing to do.
-    effective = out.get("time") or out.get("shortValueTime") or "00:00:00"
+    # Current effective out (what Woffu counts). Prefer shortTime too — presence
+    # can already show a good close while trimmed fields look early.
+    effective = (
+        out.get("time") or out.get("shortValueTime")
+        or out.get("shortTime") or "00:00:00"
+    )
     if _hhmmss_to_sec(effective) >= _hhmmss_to_sec(target) - 60:
         raise WoffuAlreadyDone(
             f"{iso}: out time already OK (effective {effective} >= target {target}).")
