@@ -648,9 +648,21 @@ def send_correction(iso, workday=None):
         out.get("time") or out.get("shortValueTime")
         or out.get("shortTime") or "00:00:00"
     )
-    if _hhmmss_to_sec(effective) >= _hhmmss_to_sec(target) - 60:
+    # Don't undo punch jitter: tolerate at least the configured "out early"
+    # window (plus 30s). Old hard-coded 60s rewrote e.g. 16:58 → 17:00 when
+    # jitter_out_before was 2. Still corrects real 7h15 auto-closes (hours early).
+    s = get_settings()
+    g_before = s.get("jitter_before_minutes", s.get("jitter_minutes", 2))
+    out_before = s.get("jitter_out_before_minutes", g_before)
+    try:
+        out_before = max(0, int(out_before if out_before is not None else 0))
+    except (TypeError, ValueError):
+        out_before = 0
+    tol_sec = max(60, out_before * 60 + 30)
+    if _hhmmss_to_sec(effective) >= _hhmmss_to_sec(target) - tol_sec:
         raise WoffuAlreadyDone(
-            f"{iso}: out time already OK (effective {effective} >= target {target}).")
+            f"{iso}: out time already OK (effective {effective} >= target {target}, "
+            f"tol={tol_sec}s).")
 
     # Real totalMin: from punched in to target out, crossing midnight.
     in_sec = _hhmmss_to_sec(inn.get("shortTime") or inn.get("time") or "0")
@@ -939,7 +951,10 @@ def tick_user():
             if note(tgt):
                 if shift_already_has_out(iso):
                     mark_done(iso, "out")
-                    log(f"{iso} out skipped (Woffu already auto-closed; will correct)")
+                    if get_settings().get("correccion", {}).get("enabled", True):
+                        log(f"{iso} out skipped (Woffu already auto-closed; will correct)")
+                    else:
+                        log(f"{iso} out skipped (Woffu already auto-closed; autocorrect off)")
                 else:
                     _fire(iso, "out")
 
@@ -962,7 +977,10 @@ def tick_user():
             if note(tgt) and now_min < yin_min:
                 if shift_already_has_out(yiso):
                     mark_done(yiso, "out")
-                    log(f"{yiso} out skipped (Woffu already auto-closed; will correct)")
+                    if get_settings().get("correccion", {}).get("enabled", True):
+                        log(f"{yiso} out skipped (Woffu already auto-closed; will correct)")
+                    else:
+                        log(f"{yiso} out skipped (Woffu already auto-closed; autocorrect off)")
                 else:
                     _fire(yiso, "out")
 
@@ -1251,7 +1269,14 @@ def api_del_day(d):
 def api_settings():
     if request.method == "POST":
         s = get_settings()
-        s.update(request.get_json(force=True))
+        body = request.get_json(force=True) or {}
+        # Deep-merge nested correccion so toggles don't wipe delay_min / out_source.
+        if isinstance(body.get("correccion"), dict):
+            merged = dict(s.get("correccion") or {})
+            merged.update(body["correccion"])
+            body = dict(body)
+            body["correccion"] = merged
+        s.update(body)
         save_json(upath("settings.json"), s)
         return jsonify({"ok": True, "settings": s})
     return jsonify(get_settings())

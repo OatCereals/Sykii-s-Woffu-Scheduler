@@ -223,7 +223,10 @@
   .jitter-line .tag{font-size:11px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--muted); min-width:3.5em}
   .jitter-example{font-size:12px; color:var(--teal); margin:12px 0 0; line-height:1.45}
-  .jitter-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+  .jitter-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; align-items:center}
+  .switch-row{display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text);
+    cursor:pointer; user-select:none; margin-right:auto}
+  .switch-row input{width:18px; height:18px; accent-color:var(--teal)}
   .cred-form input[type=text], .cred-form input[type=password]{width:100%; max-width:280px}
 
   /* phone / narrow */
@@ -398,9 +401,15 @@
       </div>
     </div>
     <div class="jitter-actions">
+      <label class="switch-row" title="This account only">
+        <input type="checkbox" id="corrEnabled" onchange="saveCorrectionToggle()">
+        <span>Auto-correct out time</span>
+      </label>
       <button class="ghost" type="button" onclick="copyJitterInToOut()">Copy clock-in → clock-out</button>
       <button class="ghost" type="button" onclick="saveJitter()">Save timing</button>
     </div>
+    <p class="note" style="margin-top:10px">Auto-correct (this login only): after clock-out, fix Woffu’s early ~7h15 auto-close to your calendar end.
+      Off = leave the punched/auto-closed time as-is. Manual “Fix last night’s shift” still works.</p>
   </section>
 
   <!-- calendar -->
@@ -513,6 +522,8 @@ async function loadSettings(){
   document.getElementById('jinAfter').value = settings.jitter_in_after_minutes ?? gAfter;
   document.getElementById('joutBefore').value = settings.jitter_out_before_minutes ?? gBefore;
   document.getElementById('joutAfter').value = settings.jitter_out_after_minutes ?? gAfter;
+  const corr = settings.correccion || {};
+  document.getElementById('corrEnabled').checked = corr.enabled !== false;
   updateJitterExamples();
   renderPresets();
 }
@@ -565,6 +576,15 @@ async function saveJitter(){
       jitter_before_minutes:ib, jitter_after_minutes:ia
     })});
   toast('Punch timing saved');
+}
+async function saveCorrectionToggle(){
+  const on=document.getElementById('corrEnabled').checked;
+  const prev=settings.correccion || {};
+  const correccion={...prev, enabled:on};
+  settings.correccion=correccion;
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({correccion})});
+  toast(on ? 'Auto-correct ON for your account' : 'Auto-correct OFF for your account');
 }
 function renderPresets(){
   const box=document.getElementById('presets'); box.innerHTML='';
